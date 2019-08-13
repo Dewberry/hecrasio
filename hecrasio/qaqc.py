@@ -594,19 +594,40 @@ def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame
     fig.suptitle('Depths at Cell Centers',
                  fontsize=16, fontweight='bold')
 
-
-def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame, aoi: gpd.geodataframe.GeoDataFrame) -> None:
+def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
     """
-    Plots extreme depths along edges
+    Creates a geodataframe containing polygons for all domains.
+    :param domain_results:
+    """
+    perimeters = [domain.Perimeter for domain in domain_results]
+    df = pd.concat(perimeters).reset_index(drop=True)
+    return gpd.GeoDataFrame(df)
+
+def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
+                       aoi: gpd.geodataframe.GeoDataFrame,
+                       mini_map: gpd.geodataframe.GeoDataFrame) -> None:
+    """
+    Plots extreme depths along edges along with an overview map showing current
+    plotted domain versus all other domains.
     :param gdf:
     :param aoi:
+    :param mini_map:
     """
-    fig, ax = plt.subplots(figsize=(10, 8))
-    aoi.plot(color='k', alpha=0.25, ax=ax)
-    gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax, markersize=16)
-    ax.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
+    fig, (ax_string) = plt.subplots(1, 2, figsize=(10, 8))
+    
+    ax1 = plt.subplot2grid((1, 2), (0, 0))
+    aoi.plot(color='k', alpha=0.25, ax=ax1)
+    gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax1, markersize=16)
+    ax1.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
                  fontsize=12, fontweight='bold')
-    ax.axis('off')
+    ax1.axis('off')
+    
+    ax2 = plt.subplot2grid((1, 2), (0, 1))
+    mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
+    aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
+    ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
+                 fontsize=12, fontweight='bold')
+    ax2.axis('off')
 
 
 def DepthVelPlot(depths: pd.Series, velocities: pd.Series, groupID: int, velThreshold: int = 30):
