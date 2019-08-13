@@ -19,6 +19,7 @@ class ResultsZip:
     """
     HEC-RAS Model Data
     Files (currently) must be read in from a .zip file.
+    PFRA set to false if not a StarII study
     """
 
     def __init__(self, path: str, require_prj: bool = True, pfra: bool = True):
@@ -59,8 +60,11 @@ class ResultsZip:
         if self._pfra:
             assert '_out' in self._pure_path.stem, "Expected '_out.zip'"
             self._name = self._pure_path.stem.replace('_out', '')
-            self._modelType = self._name.split('_')[1][0]
-            self._subType = self._name.split('_')[2]
+            try:
+                self._modelType = self._name.split('_')[1][0]
+                self._subType = self._name.split('_')[2]
+            except IndexError as e:
+                print("File format not consistentent with PFRA studies.\n Set PFRA to false.")
 
         else:
             self._name = self._pure_path.stem
