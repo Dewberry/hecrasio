@@ -427,9 +427,13 @@ def group_excessive_points(gdf: gpd.geodataframe.GeoDataFrame, cell_size: float)
     gdf_aois['point'] = gdf.geometry
     gdf_aois['polygon'] = gdf_aois.point.apply(lambda row: row.buffer(cell_size * 3))
     gdf_aois['geometry'] = gdf_aois['polygon']
-
-    diss_aois = list(cascaded_union(gdf_aois.geometry))
-    gdf_diss_aois = gpd.GeoDataFrame(diss_aois, columns=['geometry'])
+    
+    try:
+        diss_aois = list(cascaded_union(gdf_aois.geometry))
+        gdf_diss_aois = gpd.GeoDataFrame(diss_aois, columns=['geometry'])
+    except:
+        diss_aois = cascaded_union(gdf_aois.geometry)
+        gdf_diss_aois = gpd.GeoDataFrame([diss_aois], columns=['geometry'])
     return gdf_diss_aois
 
 
