@@ -650,6 +650,8 @@ def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
         * *mini_map* (gpd.geodataframe.GeoDataFrame) -- Multiple domain perimeters.
     """
     if 'mini_map' in kwargs.keys():
+        mini_map = list(kwargs.values())[0]
+        
         fig, (ax_string) = plt.subplots(1, 2, figsize=(20, 8))
         ax1 = plt.subplot2grid((1, 2), (0, 0))
         aoi.plot(color='k', alpha=0.25, ax=ax1)
@@ -659,7 +661,7 @@ def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
         ax1.axis('off')
 
         ax2 = plt.subplot2grid((1, 2), (0, 1))
-        mini_map[0].plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
+        mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
         aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
         ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
                      fontsize=12, fontweight='bold')
