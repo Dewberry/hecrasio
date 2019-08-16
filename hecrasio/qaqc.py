@@ -87,6 +87,27 @@ class HDFResultsFile:
             values = [v[0] if isinstance(v, list) else v for v in values]
             values = [v.decode() if isinstance(v, bytes) else v for v in values]
             return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
+        
+        def get_geometry_data(table, domain):
+            """Read in data from results tables"""
+            data = '{}/{}/{}'.format(GEOMETRY_2DFLOW_AREA, domain, table)
+            return np.array(self._plan_data[data])
+
+        def get_perimeter(domain):
+            """Creates a perimeter polygon from points"""
+            d_array = get_geometry_data('Perimeter', domain)
+            aoi = Polygon([tuple(p) for p in d_array])
+            return gpd.GeoDataFrame(geometry=gpd.GeoSeries(aoi))
+        
+        def get_domain_geometries():
+            domanins = self._domains
+            if len(domanins) > 1:
+                poly_list = [get_perimeter(domain) for domain in domanins]
+                df = pd.concat(poly_list).reset_index(level=0, drop=True)
+                gdf = gpd.GeoDataFrame(df)
+            else:
+                gdf = get_perimeter(domain)
+            return gdf
 
         def get_2dSummary():
             """Add Description"""
@@ -97,11 +118,13 @@ class HDFResultsFile:
             return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
 
         self._hdfLocal = local_hdf()
+        self._plan_data = self._hdfLocal
         self._Plan_Information = get_planData('Plan Information')
         self._Plan_Parameters = get_planData('Plan Parameters')
         self._2dFlowArea = get_2dFlowArea_data()
 
         self._domains = self._2dFlowArea.columns.tolist()
+        self._domain_polys = get_domain_geometries()
         self._summary = get_2dSummary()
 
     # Getter functions
@@ -114,6 +137,11 @@ class HDFResultsFile:
     def domains(self):
         """Add Description"""
         return self._domains
+    
+    @property
+    def domain_polys(self):
+        """Domain Polygons"""
+        return self._domain_polys
 
     @property
     def Plan_Information(self):
