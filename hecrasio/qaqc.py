@@ -637,15 +637,20 @@ def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
 
 def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
                        aoi: gpd.geodataframe.GeoDataFrame,
-                       mini_map: gpd.geodataframe.GeoDataFrame=None) -> None:
+                       **kwargs) -> None:
     """
     Plots extreme depths along edges along with an overview map showing current
     plotted domain versus all other domains.
     :param gdf:
     :param aoi:
-    :param mini_map:
+    :param \**kwargs:
+        See below
+    
+    :Keyword Arguments:
+        * *mini_map* (gpd.geodataframe.GeoDataFrame) -- Multiple domain perimeters.
     """
-    if mini_map is not None:
+    if 'mini_map' in kwargs.keys():
+        fig, (ax_string) = plt.subplots(1, 2, figsize=(20, 8))
         ax1 = plt.subplot2grid((1, 2), (0, 0))
         aoi.plot(color='k', alpha=0.25, ax=ax1)
         gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax1, markersize=16)
@@ -654,7 +659,7 @@ def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
         ax1.axis('off')
 
         ax2 = plt.subplot2grid((1, 2), (0, 1))
-        mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
+        mini_map[0].plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
         aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
         ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
                      fontsize=12, fontweight='bold')
