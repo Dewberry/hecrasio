@@ -100,14 +100,14 @@ class HDFResultsFile:
             return gpd.GeoDataFrame(geometry=gpd.GeoSeries(aoi))
         
         def get_domain_geometries():
-            domanins = self._domains
-            if len(domanins) > 1:
-                poly_list = [get_perimeter(domain) for domain in domanins]
+            domains = self._domains
+            if len(domains) > 1:
+                poly_list = [get_perimeter(domain) for domain in domains]
                 df = pd.concat(poly_list).reset_index(level=0, drop=True)
-                gdf = gpd.GeoDataFrame(df)
+                return gpd.GeoDataFrame(df)
             else:
-                gdf = get_perimeter(domain)
-            return gdf
+                print('Single domain found...')
+                pass
 
         def get_2dSummary():
             """Add Description"""
@@ -637,7 +637,7 @@ def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
 
 def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
                        aoi: gpd.geodataframe.GeoDataFrame,
-                       mini_map: gpd.geodataframe.GeoDataFrame) -> None:
+                       mini_map: gpd.geodataframe.GeoDataFrame=None) -> None:
     """
     Plots extreme depths along edges along with an overview map showing current
     plotted domain versus all other domains.
@@ -645,21 +645,27 @@ def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
     :param aoi:
     :param mini_map:
     """
-    fig, (ax_string) = plt.subplots(1, 2, figsize=(10, 8))
-    
-    ax1 = plt.subplot2grid((1, 2), (0, 0))
-    aoi.plot(color='k', alpha=0.25, ax=ax1)
-    gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax1, markersize=16)
-    ax1.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
-                 fontsize=12, fontweight='bold')
-    ax1.axis('off')
-    
-    ax2 = plt.subplot2grid((1, 2), (0, 1))
-    mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
-    aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
-    ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
-                 fontsize=12, fontweight='bold')
-    ax2.axis('off')
+    if mini_map is not None:
+        ax1 = plt.subplot2grid((1, 2), (0, 0))
+        aoi.plot(color='k', alpha=0.25, ax=ax1)
+        gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax1, markersize=16)
+        ax1.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
+                     fontsize=12, fontweight='bold')
+        ax1.axis('off')
+
+        ax2 = plt.subplot2grid((1, 2), (0, 1))
+        mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
+        aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
+        ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
+                     fontsize=12, fontweight='bold')
+        ax2.axis('off')
+    else:
+        fig, ax = plt.subplots(figsize = (7,7))
+        aoi.plot(color='k', alpha=0.25, ax=ax)
+        gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax, markersize=16)
+        ax.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
+                     fontsize=12, fontweight='bold')
+        ax.axis('off')
 
 
 def DepthVelPlot(depths: pd.Series, velocities: pd.Series, groupID: int, velThreshold: int = 30):
