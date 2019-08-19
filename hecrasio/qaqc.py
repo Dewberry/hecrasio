@@ -87,6 +87,27 @@ class HDFResultsFile:
             values = [v[0] if isinstance(v, list) else v for v in values]
             values = [v.decode() if isinstance(v, bytes) else v for v in values]
             return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
+        
+        def get_geometry_data(table, domain):
+            """Read in data from results tables"""
+            data = '{}/{}/{}'.format(GEOMETRY_2DFLOW_AREA, domain, table)
+            return np.array(self._plan_data[data])
+
+        def get_perimeter(domain):
+            """Creates a perimeter polygon from points"""
+            d_array = get_geometry_data('Perimeter', domain)
+            aoi = Polygon([tuple(p) for p in d_array])
+            return gpd.GeoDataFrame(geometry=gpd.GeoSeries(aoi))
+        
+        def get_domain_geometries():
+            domains = self._domains
+            if len(domains) > 1:
+                poly_list = [get_perimeter(domain) for domain in domains]
+                df = pd.concat(poly_list).reset_index(level=0, drop=True)
+                return gpd.GeoDataFrame(df)
+            else:
+                print('Single domain found...')
+                pass
 
         def get_2dSummary():
             """Add Description"""
@@ -97,11 +118,13 @@ class HDFResultsFile:
             return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
 
         self._hdfLocal = local_hdf()
+        self._plan_data = self._hdfLocal
         self._Plan_Information = get_planData('Plan Information')
         self._Plan_Parameters = get_planData('Plan Parameters')
         self._2dFlowArea = get_2dFlowArea_data()
 
         self._domains = self._2dFlowArea.columns.tolist()
+        self._domain_polys = get_domain_geometries()
         self._summary = get_2dSummary()
 
     # Getter functions
@@ -114,6 +137,11 @@ class HDFResultsFile:
     def domains(self):
         """Add Description"""
         return self._domains
+    
+    @property
+    def domain_polys(self):
+        """Domain Polygons"""
+        return self._domain_polys
 
     @property
     def Plan_Information(self):
@@ -609,29 +637,42 @@ def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
 
 def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
                        aoi: gpd.geodataframe.GeoDataFrame,
-                       mini_map: gpd.geodataframe.GeoDataFrame) -> None:
+                       **kwargs) -> None:
     """
     Plots extreme depths along edges along with an overview map showing current
     plotted domain versus all other domains.
     :param gdf:
     :param aoi:
-    :param mini_map:
+    :param \**kwargs:
+        See below
+    
+    :Keyword Arguments:
+        * *mini_map* (gpd.geodataframe.GeoDataFrame) -- Multiple domain perimeters.
     """
-    fig, (ax_string) = plt.subplots(1, 2, figsize=(10, 8))
-    
-    ax1 = plt.subplot2grid((1, 2), (0, 0))
-    aoi.plot(color='k', alpha=0.25, ax=ax1)
-    gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax1, markersize=16)
-    ax1.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
-                 fontsize=12, fontweight='bold')
-    ax1.axis('off')
-    
-    ax2 = plt.subplot2grid((1, 2), (0, 1))
-    mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
-    aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
-    ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
-                 fontsize=12, fontweight='bold')
-    ax2.axis('off')
+    if 'mini_map' in kwargs.keys():
+        mini_map = list(kwargs.values())[0]
+        
+        fig, (ax_string) = plt.subplots(1, 2, figsize=(20, 8))
+        ax1 = plt.subplot2grid((1, 2), (0, 0))
+        aoi.plot(color='k', alpha=0.25, ax=ax1)
+        gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax1, markersize=16)
+        ax1.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
+                     fontsize=12, fontweight='bold')
+        ax1.axis('off')
+
+        ax2 = plt.subplot2grid((1, 2), (0, 1))
+        mini_map.plot(color='#BFBFBF', edgecolor='k', ax=ax2, markersize=16)
+        aoi.plot(color='#FFC0CB', edgecolor='k', ax=ax2)
+        ax2.set_title('Current domain (pink) compared to all domains (grey)'.format(len(gdf)),
+                     fontsize=12, fontweight='bold')
+        ax2.axis('off')
+    else:
+        fig, ax = plt.subplots(figsize = (7,7))
+        aoi.plot(color='k', alpha=0.25, ax=ax)
+        gdf.plot(column='abs_max', cmap='viridis', legend=True, ax=ax, markersize=16)
+        ax.set_title('Cell Locations with Depths > 1 ft\n(Check for Ponding)'.format(len(gdf)),
+                     fontsize=12, fontweight='bold')
+        ax.axis('off')
 
 
 def DepthVelPlot(depths: pd.Series, velocities: pd.Series, groupID: int, velThreshold: int = 30):
