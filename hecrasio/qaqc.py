@@ -294,7 +294,6 @@ class DomainResults:
         try:
             self._StageBC = get_tseries_forcing('Stage Hydrographs')
         except KeyError as e:
-            print(e)
             self._StageBC = None
 
         try:
@@ -599,7 +598,7 @@ def plot_disparate_instabilities(max_list, count_list, bounding_polygon):
     fig.suptitle('Isolated Points above Threshold', fontsize=16, fontweight='bold')
 
 
-def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame) -> None:
+def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame, domain:str) -> None:
     """
     Plots the descriptive statistics (Max, Min) for
         cell centers with the area of interest underneath.
@@ -623,7 +622,7 @@ def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame
 
     ax1.axis('off')
     ax2.axis('off')
-    fig.suptitle('Depths at Cell Centers',
+    fig.suptitle('Depths at Cell Centers of Domain {}'.format(domain),
                  fontsize=16, fontweight='bold')
 
 def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
