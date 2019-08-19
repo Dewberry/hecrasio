@@ -571,12 +571,13 @@ def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, 
     fig.suptitle('Group {}'.format(idx + 1), fontsize=16, fontweight='bold')
 
 
-def plot_disparate_instabilities(max_list, count_list, bounding_polygon):
+def plot_disparate_instabilities(max_list, count_list, bounding_polygon, domain):
     """
     Add Description
     :param max_list:
     :param count_list:
     :param bounding_polygon:
+    :param domain:
     """
     small_maxes = pd.concat(max_list)
     small_counts = pd.concat(count_list)
@@ -595,7 +596,7 @@ def plot_disparate_instabilities(max_list, count_list, bounding_polygon):
 
     ax1.axis('off')
     ax2.axis('off')
-    fig.suptitle('Isolated Points above Threshold', fontsize=16, fontweight='bold')
+    fig.suptitle('Isolated Points above Threshold for Domain {}'.format(domain), fontsize=16, fontweight='bold')
 
 
 def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame, domain:str) -> None:
@@ -708,11 +709,12 @@ def DepthVelPlot(depths: pd.Series, velocities: pd.Series, groupID: int, velThre
     plt.show()
 
 
-def velCheckMain(results, plot_tseries=5):
+def velCheckMain(results, domain, plot_tseries=5):
     """
     Add Description
     :param results:
     :param plot_tseries:
+    :param domain:
     """
     # Identify face velocities above a given threshold
     df_thresh = results.find_anomalous_attributes()
@@ -751,9 +753,9 @@ def velCheckMain(results, plot_tseries=5):
                 DepthVelPlot(depths.loc[i], velocities.loc[i], i)
 
         # print("Completed in {} seconds.".format(round(time() - start)))
-        plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter)
+        plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
     else:
-        print('No Velocity Errors Found')
+        print('No Velocity Errors Found in Domain {}'.format(domain))
 
 
 def plotBCs(results, domain:str):
