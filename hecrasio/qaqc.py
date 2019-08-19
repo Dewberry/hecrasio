@@ -604,7 +604,7 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
         result = DomainResults(model, rasPlan, domain)
         plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
         plot_extreme_edges(result.Extreme_Edges, result.Perimeter)
-        plotBCs(result)
+        plotBCs(result, domain)
         velCheckMain(result, domain, plot_tseries)
 
 def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, idx):
