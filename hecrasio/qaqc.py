@@ -528,6 +528,27 @@ def find_large_and_small_groups(count_list: list, max_list: list, face_list: lis
     small_dict['counts'] = [small_tuple[1] for small_tuple in small_tuples]
     return large_dict, small_dict
 
+# Plotting Functions ------------------------------------------------------------
+
+def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
+    """Wrapper function plotting descriptive statistics, extreme edges, boundary
+    conditions and velocity values.
+    """
+    if len(domains) > 1:
+        results = {domain: DomainResults(model, rasPlan, domain) for domain in domains}
+        for domain, result in results.items():
+            plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
+            plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
+            plotBCs(result, domain) 
+            velCheckMain(result, domain, plot_tseries)
+
+    else:
+        domain = domains[0]
+        result = DomainResults(model, rasPlan, domain)
+        plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
+        plot_extreme_edges(result.Extreme_Edges, result.Perimeter)
+        plotBCs(result)
+        velCheckMain(result, domain, plot_tseries)
 
 def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, idx):
     """
