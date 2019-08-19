@@ -756,33 +756,36 @@ def velCheckMain(results, plot_tseries=5):
         print('No Velocity Errors Found')
 
 
-def plotBCs(results):
+def plotBCs(results, domain:str):
     """
     Add Description
     """
     if results.FlowBC is not None:
         for k, v in results.FlowBC.items():
-            fig, ax = plt.subplots(figsize=(20, 2))
-            ax.set_title('{}\nPeak Flow of {} cfs'.format(k, int(v[:, 1].max())))
-            ax.set_ylabel('Flow (ft)')
-            ax.set_xlabel('Days')
-            ax.plot(v[:, 0], v[:, 1])
-            ax.grid()
+            if domain in k:
+                fig, ax = plt.subplots(figsize=(20, 2))
+                ax.set_title('{}\nPeak Flow of {} cfs'.format(k, int(v[:, 1].max())))
+                ax.set_ylabel('Flow (ft)')
+                ax.set_xlabel('Days')
+                ax.plot(v[:, 0], v[:, 1])
+                ax.grid()
 
     if results.StageBC is not None:
         for k, v in results.StageBC.items():
-            fig, ax = plt.subplots(figsize=(20, 2))
-            ax.set_title(k)
-            ax.set_ylabel('Stage (cfs)')
-            ax.set_xlabel('Days')
-            ax.plot(v[:, 0], v[:, 1])
-            ax.grid()
+            if domain in k:
+                fig, ax = plt.subplots(figsize=(20, 2))
+                ax.set_title(k)
+                ax.set_ylabel('Stage (cfs)')
+                ax.set_xlabel('Days')
+                ax.plot(v[:, 0], v[:, 1])
+                ax.grid()
 
     if results.PrecipBC is not None:
         for k, v in results.PrecipBC.items():
-            fig, ax = plt.subplots(figsize=(20, 2))
-            ax.set_title(k)
-            ax.set_ylabel('Precipitation (inches)')
-            ax.set_xlabel('Days')
-            ax.plot(v[:, 0], v[:, 1])
-            ax.grid()
+            if domain in k:
+                fig, ax = plt.subplots(figsize=(20, 2))
+                ax.set_title(k)
+                ax.set_ylabel('Precipitation (inches)')
+                ax.set_xlabel('Days')
+                ax.plot(v[:, 0], v[:, 1])
+                ax.grid()
