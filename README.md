@@ -21,13 +21,13 @@
 To create a virtual environment using [Anaconda](https://www.anaconda.com/distribution/)
 ```
 1. Clone the respository
-1. Copy and execute: conda install --yes --file requirements.txt
-1. Copy and execute: while read requirement; do conda install --yes $requirement; done < requirements.txt
-1. Note, the above will not install boto3. Do so by copying and executing: conda install -c conda-forge boto3=1.9.129
-1. Copy and execute: conda install -c conda-forge awscli
-1. Configure aws cli by executing: aws congigure
-1. Copy and execute: conda install notebook ipykernel
-1. Copy and execute: ipython kernelspec install-self
+2. Copy and execute: conda install --yes --file requirements.txt
+3. Copy and execute: while read requirement; do conda install --yes $requirement; done < requirements.txt
+4. Note, the above will not install boto3. Do so by copying and executing: conda install -c conda-forge boto3=1.9.129
+5. Copy and execute: conda install -c conda-forge awscli
+6. Configure aws cli by executing: aws congigure
+7. Copy and execute: conda install notebook ipykernel
+8. Copy and execute: ipython kernelspec install-self
 ```
 
 ## Workflow
