@@ -41,33 +41,34 @@ def log(in_dir, file_name, in_text= None, start= None, end= None, exception= Non
         log(in_dir, file_name, in_text= "Op2 - Failed", exception= e)
     log(in_dir, file_name, end=True) 
     """
-    if in_text != None:
-        os.chdir(in_dir)
-        readme = open(file_name, "a")
-        readme.write(in_text + "\n")
-        readme.close()
+#     if in_text != None:
+#         os.chdir(in_dir)
+#         readme = open(file_name, "a")
+#         readme.write(in_text + "\n")
+#         readme.close()
         
-    if exception != None:
-        os.chdir(in_dir)
-        readme = open(file_name, "a")
-        if hasattr(exception, 'message'):
-            readme.write("\nException message:" + "\n")
-            readme.write(str(exception.message) + "\n")
-        else:
-            readme.write("\nException message:" + "\n")
-            readme.write(str(exception) + "\n")
-        readme.close()
+#     if exception != None:
+#         os.chdir(in_dir)
+#         readme = open(file_name, "a")
+#         if hasattr(exception, 'message'):
+#             readme.write("\nException message:" + "\n")
+#             readme.write(str(exception.message) + "\n")
+#         else:
+#             readme.write("\nException message:" + "\n")
+#             readme.write(str(exception) + "\n")
+#         readme.close()
     
     if start == True:
         os.chdir(in_dir)
-        readme = open(file_name, "a")
-        readme.write("\n#-------------------------------------#\n\n")
-        readme.write("Script start: " + time.ctime() + "\n\n")
-        readme.close()
+        with open(file_name, "a") as readme:
+            readme.write("#-------------------------------------#\n")
+            readme.write("#-------------------------------------#\n")
+            readme.write("#-------------------------------------#\n")
+#         readme.write("Script start: " + time.ctime() + "\n\n")
 
-    if end == True:
-        os.chdir(in_dir)
-        readme = open(file_name, "a")
-        end_time = time.time()
-        readme.write("\nScript end: " + time.ctime() + "\n")
-        readme.close()  
+#     if end == True:
+#         os.chdir(in_dir)
+#         readme = open(file_name, "a")
+#         end_time = time.time()
+#         readme.write("\nScript end: " + time.ctime() + "\n")
+#         readme.close()  
