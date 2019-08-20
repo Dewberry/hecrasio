@@ -441,6 +441,15 @@ class DomainResults:
 
 # Functions ---------------------------------------------------------------------
 
+def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
+    """
+    Creates a geodataframe containing polygons for all domains.
+    :param domain_results:
+    """
+    perimeters = [domain.Perimeter for domain in domain_results]
+    df = pd.concat(perimeters).reset_index(drop=True)
+    return gpd.GeoDataFrame(df)
+
 def group_excessive_points(gdf: gpd.geodataframe.GeoDataFrame, cell_size: float):
     """
     Creates groupings of collocated points exceeding a threshold.
@@ -528,6 +537,75 @@ def find_large_and_small_groups(count_list: list, max_list: list, face_list: lis
     small_dict['counts'] = [small_tuple[1] for small_tuple in small_tuples]
     return large_dict, small_dict
 
+def velCheckMain(results, domain, plot_tseries=5):
+    """
+    Add Description
+    :param results:
+    :param plot_tseries:
+    :param domain:
+    """
+    # Identify face velocities above a given threshold
+    df_thresh = results.find_anomalous_attributes()
+    df_count = results.count_anomalous_attributes()
+
+    if df_count.shape[0] > 1 and df_thresh.shape[0] > 1:
+
+        # Identify groups of excessive centroids
+        gdf_groups = group_excessive_points(df_thresh, results.CellSize)
+
+        # Using a method nearly doubles the time
+        max_list, count_list, face_list = subset_data(gdf_groups, df_thresh, df_count, results.Faces)
+
+        # Split groups into large (n > 5) clusters vs. everything else
+        l_dict, s_dict = find_large_and_small_groups(count_list, max_list, face_list, gdf_groups)
+
+        # Identify group of interest
+        for idx in range(len(l_dict['groups'])):
+            plot_instabilities(l_dict['maxes'], l_dict['counts'], l_dict['faces'], results.Perimeter,
+                               l_dict['groups'], idx)
+
+            # NOT USED?
+            maxes = l_dict['maxes'][idx]
+            # counts = l_dict['counts'][idx]
+            # faces = l_dict['faces'][idx]
+            # group = l_dict['groups'][idx]
+
+            max_vFaceIDs = list(maxes.sort_values(by='max', ascending=False)[0:plot_tseries].index)
+
+            # NOT USED?
+            # groupID = idx
+            depths = results.Avg_Face_Depth.iloc[max_vFaceIDs]
+            velocities = results.Face_Velocity.iloc[max_vFaceIDs]
+
+            for i in depths.index:
+                DepthVelPlot(depths.loc[i], velocities.loc[i], i)
+
+        # print("Completed in {} seconds.".format(round(time() - start)))
+        plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+    else:
+        print('No Velocity Errors Found in Domain {}'.format(domain))
+
+# Plotting Functions ------------------------------------------------------------
+
+def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
+    """Wrapper function plotting descriptive statistics, extreme edges, boundary
+    conditions and velocity values.
+    """
+    if len(domains) > 1:
+        results = {domain: DomainResults(model, rasPlan, domain) for domain in domains}
+        for domain, result in results.items():
+            plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
+            plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
+            plotBCs(result, domain) 
+            velCheckMain(result, domain, plot_tseries)
+
+    else:
+        domain = domains[0]
+        result = DomainResults(model, rasPlan, domain)
+        plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
+        plot_extreme_edges(result.Extreme_Edges, result.Perimeter)
+        plotBCs(result, domain)
+        velCheckMain(result, domain, plot_tseries)
 
 def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, idx):
     """
@@ -571,12 +649,13 @@ def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, 
     fig.suptitle('Group {}'.format(idx + 1), fontsize=16, fontweight='bold')
 
 
-def plot_disparate_instabilities(max_list, count_list, bounding_polygon):
+def plot_disparate_instabilities(max_list, count_list, bounding_polygon, domain):
     """
     Add Description
     :param max_list:
     :param count_list:
     :param bounding_polygon:
+    :param domain:
     """
     small_maxes = pd.concat(max_list)
     small_counts = pd.concat(count_list)
@@ -595,7 +674,7 @@ def plot_disparate_instabilities(max_list, count_list, bounding_polygon):
 
     ax1.axis('off')
     ax2.axis('off')
-    fig.suptitle('Isolated Points above Threshold', fontsize=16, fontweight='bold')
+    fig.suptitle('Isolated Points above Threshold for Domain {}'.format(domain), fontsize=16, fontweight='bold')
 
 
 def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame, domain:str) -> None:
@@ -625,14 +704,6 @@ def plot_descriptive_stats(stat_lists: tuple, aoi: gpd.geodataframe.GeoDataFrame
     fig.suptitle('Depths at Cell Centers of Domain {}'.format(domain),
                  fontsize=16, fontweight='bold')
 
-def all_aoi_gdf(domain_results:list) -> gpd.geodataframe.GeoDataFrame:
-    """
-    Creates a geodataframe containing polygons for all domains.
-    :param domain_results:
-    """
-    perimeters = [domain.Perimeter for domain in domain_results]
-    df = pd.concat(perimeters).reset_index(drop=True)
-    return gpd.GeoDataFrame(df)
 
 def plot_extreme_edges(gdf: gpd.geodataframe.GeoDataFrame,
                        aoi: gpd.geodataframe.GeoDataFrame,
@@ -708,81 +779,36 @@ def DepthVelPlot(depths: pd.Series, velocities: pd.Series, groupID: int, velThre
     plt.show()
 
 
-def velCheckMain(results, plot_tseries=5):
-    """
-    Add Description
-    :param results:
-    :param plot_tseries:
-    """
-    # Identify face velocities above a given threshold
-    df_thresh = results.find_anomalous_attributes()
-    df_count = results.count_anomalous_attributes()
-
-    if df_count.shape[0] > 1 and df_thresh.shape[0] > 1:
-
-        # Identify groups of excessive centroids
-        gdf_groups = group_excessive_points(df_thresh, results.CellSize)
-
-        # Using a method nearly doubles the time
-        max_list, count_list, face_list = subset_data(gdf_groups, df_thresh, df_count, results.Faces)
-
-        # Split groups into large (n > 5) clusters vs. everything else
-        l_dict, s_dict = find_large_and_small_groups(count_list, max_list, face_list, gdf_groups)
-
-        # Identify group of interest
-        for idx in range(len(l_dict['groups'])):
-            plot_instabilities(l_dict['maxes'], l_dict['counts'], l_dict['faces'], results.Perimeter,
-                               l_dict['groups'], idx)
-
-            # NOT USED?
-            maxes = l_dict['maxes'][idx]
-            # counts = l_dict['counts'][idx]
-            # faces = l_dict['faces'][idx]
-            # group = l_dict['groups'][idx]
-
-            max_vFaceIDs = list(maxes.sort_values(by='max', ascending=False)[0:plot_tseries].index)
-
-            # NOT USED?
-            # groupID = idx
-            depths = results.Avg_Face_Depth.iloc[max_vFaceIDs]
-            velocities = results.Face_Velocity.iloc[max_vFaceIDs]
-
-            for i in depths.index:
-                DepthVelPlot(depths.loc[i], velocities.loc[i], i)
-
-        # print("Completed in {} seconds.".format(round(time() - start)))
-        plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter)
-    else:
-        print('No Velocity Errors Found')
-
-
-def plotBCs(results):
+def plotBCs(results, domain:str):
     """
     Add Description
     """
     if results.FlowBC is not None:
         for k, v in results.FlowBC.items():
-            fig, ax = plt.subplots(figsize=(20, 2))
-            ax.set_title('{}\nPeak Flow of {} cfs'.format(k, int(v[:, 1].max())))
-            ax.set_ylabel('Flow (ft)')
-            ax.set_xlabel('Days')
-            ax.plot(v[:, 0], v[:, 1])
-            ax.grid()
+            if domain in k:
+                fig, ax = plt.subplots(figsize=(20, 2))
+                ax.set_title('{}\nPeak Flow of {} cfs'.format(k, int(v[:, 1].max())))
+                ax.set_ylabel('Flow (ft)')
+                ax.set_xlabel('Days')
+                ax.plot(v[:, 0], v[:, 1])
+                ax.grid()
 
     if results.StageBC is not None:
         for k, v in results.StageBC.items():
-            fig, ax = plt.subplots(figsize=(20, 2))
-            ax.set_title(k)
-            ax.set_ylabel('Stage (cfs)')
-            ax.set_xlabel('Days')
-            ax.plot(v[:, 0], v[:, 1])
-            ax.grid()
+            if domain in k:
+                fig, ax = plt.subplots(figsize=(20, 2))
+                ax.set_title(k)
+                ax.set_ylabel('Stage (cfs)')
+                ax.set_xlabel('Days')
+                ax.plot(v[:, 0], v[:, 1])
+                ax.grid()
 
     if results.PrecipBC is not None:
         for k, v in results.PrecipBC.items():
-            fig, ax = plt.subplots(figsize=(20, 2))
-            ax.set_title(k)
-            ax.set_ylabel('Precipitation (inches)')
-            ax.set_xlabel('Days')
-            ax.plot(v[:, 0], v[:, 1])
-            ax.grid()
+            if domain in k:
+                fig, ax = plt.subplots(figsize=(20, 2))
+                ax.set_title(k)
+                ax.set_ylabel('Precipitation (inches)')
+                ax.set_xlabel('Days')
+                ax.plot(v[:, 0], v[:, 1])
+                ax.grid()
