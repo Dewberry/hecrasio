@@ -9,31 +9,28 @@ from hecrasio.core import *
 from hecrasio.qaqc import *
 from hecrasio.s3tools import *
 
-print(os.getcwd())
+# [usage] python PostProcessor.py jobID TMPID > jobID.out
 
 def main():
     jobID = sys.argv[1] # JobID to process
     TMPID = sys.argv[2] # Integer for naming processing folder if required
     projID = jobID[0:6]
     
-    # ### Pull from queue
+    # QAQC NB & RASMAPPER exe paths
     nb = r'C:\Users\Administrator\Desktop\hecrasio\notebooks\{}'.format('QAQC-PFRA.ipynb')
-    #cmd = r"C:\Users\Administrator\Desktop\bins\Mapper64\RasComputeMaps.exe"
     cmd = r'C:\Program Files (x86)\HEC\HEC-RAS\5.0.7\Mapper64\RasComputeMaps.exe'
 
-    # Assign Wkdir ID for running multiple
+    # Assign Wkdir ID for running multiple, Paths for Project 
     wkdir = pl.Path(r"C:\Users\Administrator\Desktop\P{}".format(TMPID))
-    ### Create Data Directory if needed
-    if not os.path.exists(wkdir): os.mkdir(wkdir)
-
-
-    # Paths created on the fly using dirs
     proj_dir = pl.Path(r"C:\Users\Administrator\Desktop\{}".format(projID))
     terrain_dir = proj_dir/"Terrain"
-    points_dir = proj_dir/"Points" # \{0}_Points.shp"
+    points_dir = proj_dir/"Points" 
+
+    # Write path vars
     s3_model_input, s3_model_output, s3_point_data, s3_output_dir = get_model_paths(jobID)
 
-    proj_paths = [proj_dir, terrain_dir, points_dir]
+    # Create directories if needed
+    proj_paths = [wkdir, proj_dir, terrain_dir, points_dir]
     for p in proj_paths:
         if not os.path.exists(p):
             os.mkdir(p)
@@ -41,29 +38,29 @@ def main():
     # Get Point & Terrain Data if needed
     local_point_data = points_dir/'{}_Points.shp'.format(projID)
 
+    # Download point data
     if not os.path.exists(local_point_data):
         os.chdir(points_dir)
         get_point_from_s3(s3_point_data)
         os.chdir('../')
         
+    # Download terrain data
     if len(os.listdir(terrain_dir)) < 4:
         os.chdir(terrain_dir)
         get_terrain_data(terrain_dir, s3_model_input)
         os.chdir('../')
         
-    # Create RASMAP Inputs
+    # Create RASMAP & QAQC NB Inputs vars
     os.chdir(wkdir)
     rasmap  = str(wkdir/"{}.rasmap")
     rasPlan = str(wkdir/"{}")
     qaqcNB  = str(wkdir/"{}.ipynb".format(jobID))
 
-
     # Run QAQC Notebook --> Uncomment for production
     notebook = pm.execute_notebook(nb, qaqcNB, parameters={'model_s3path' : s3_model_output})
     pipe = subprocess.Popen(['jupyter', 'nbconvert', qaqcNB], stdout=subprocess.PIPE)
 
-
-    # Get List of tiffs used in model 
+    # Get List of tif and associate files used in model 
     terrainHDF = list(terrain_dir.glob('*.hdf'))[0]
     terrainTIF = list(terrain_dir.glob('*.tif'))[0]
     terrainVRT = list(terrain_dir.glob('*.vrt'))[0]
@@ -96,14 +93,17 @@ def main():
     df = pd.DataFrame.from_dict(act_pointdata_results, orient = 'index', columns=[jobID])
     df.to_csv('{}.csv'.format(jobID))
 
-    # Clean tmp files & copy results to s3
-    save_files = clean_workspace(wkdir)
-    #assert len(save_files) == 5
+    print('unlocking tiff....')
+    del local_tiff # unlock  
 
+    # Clean tmp files & copy results to s3
+    save_files = clean_workspace(wkdir, jobID)
+    #assert len(save_files) == 5
 
     for s in save_files:
         s3file = s3_output_dir.replace('s3://pfra/','') +'/'+ s.name
         upload_file(str(s),'pfra', s3file)
+        os.remove(s)
 
 if __name__== "__main__":
     main()

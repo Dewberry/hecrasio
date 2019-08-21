@@ -4,6 +4,7 @@ from io import BytesIO
 import zipfile
 import os
 import osr
+import rasterio
 import sys 
 import os
 import subprocess
@@ -118,7 +119,7 @@ def get_proj_str(raster_src:any):
     return rasterio.crs.CRS.from_string(tiff_crs)
     
 
-def clean_workspace(wkdir:any, file_extenstions:list = ['.html', '.ipynb', '.csv', '.tif', '.vrt'])-> list:
+def clean_workspace(wkdir:any, jobID:str, file_extenstions:list = ['.html', '.ipynb', '.csv', '.tif', '.vrt'])-> list:
     """Remove temporary files from post-processing dir"""
     tmp_files = list(wkdir.rglob('*'))
     save_files = [f for f in tmp_files if '{}{}'.format(jobID, f.suffix) in f.name and f.suffix in file_extenstions]

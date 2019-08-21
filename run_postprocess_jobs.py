@@ -6,17 +6,13 @@ queue = sqs.get_queue_by_name(QueueName=job_queue)
 # check for items in queue 
 jobs_remaining = int(queue.attributes['ApproximateNumberOfMessages'])
 
+# Add While-True loop, scheduler for managing multiple processes
 for message in queue.receive_messages():
     job_start = datetime.now()
     dtm = job_start.strftime('%Y-%m-%d %H:%M')
     jobID = message.body
-    print(jobID)
-    # run process
     message.delete()
+    # call PostProcessor, pipe output to [jobID].out file
+    # upload [jobID].out file to s3
+    
 
-
-# In[ ]:
-
-
-jobID = 'DC_F01_NBR_E0006'
-projID = jobID[0:6]
