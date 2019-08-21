@@ -99,7 +99,7 @@ def get_terrain_data(terrainDir:str, s3_model_input:str, projection = 'Projectio
     del model
     return None
 
-def collect_output_data(jobID: str):
+def collect_output_data(jobID: str) -> str:
     """Move and rename output from RASMapper"""
     ras_grid_files = glob(os.path.join(os.getcwd(), '**', 'WSE*'), recursive=True)
     rasGrid, rasVRT = ras_grid_files[0], ras_grid_files[1]
@@ -109,7 +109,7 @@ def collect_output_data(jobID: str):
     for rawFilename in ras_grid_files:
         updateFilename = 'WSE_{}.{}'.format(jobID, rawFilename.split('.')[-1])
         os.rename(rawFilename, updateFilename)
-    return None
+    return rasGridRename
 
 def get_proj_str(raster_src:any):
     """Handler for ogr/osr projections"""

@@ -3,16 +3,18 @@
 
 # ### Dev routine for PFRA Post-Processing
 import sys
+import os
 sys.path.append('../')
 from hecrasio.core import *
 from hecrasio.qaqc import *
 from hecrasio.s3tools import *
 
-
+print(os.getcwd())
 
 def main():
-    jobid = sys.argv[1] # JobID to process
-    tmpID = sys.argv[2] # Integer for naming processing folder if required
+    jobID = sys.argv[1] # JobID to process
+    TMPID = sys.argv[2] # Integer for naming processing folder if required
+    projID = jobID[0:6]
     
     # ### Pull from queue
     nb = r'C:\Users\Administrator\Desktop\hecrasio\notebooks\{}'.format('QAQC-PFRA.ipynb')
@@ -20,7 +22,6 @@ def main():
     cmd = r'C:\Program Files (x86)\HEC\HEC-RAS\5.0.7\Mapper64\RasComputeMaps.exe'
 
     # Assign Wkdir ID for running multiple
-    TMPID = 1
     wkdir = pl.Path(r"C:\Users\Administrator\Desktop\P{}".format(TMPID))
     ### Create Data Directory if needed
     if not os.path.exists(wkdir): os.mkdir(wkdir)
@@ -57,7 +58,7 @@ def main():
     qaqcNB  = str(wkdir/"{}.ipynb".format(jobID))
 
 
-    # Run QAQC Notebook
+    # Run QAQC Notebook --> Uncomment for production
     notebook = pm.execute_notebook(nb, qaqcNB, parameters={'model_s3path' : s3_model_output})
     pipe = subprocess.Popen(['jupyter', 'nbconvert', qaqcNB], stdout=subprocess.PIPE)
 
@@ -82,9 +83,8 @@ def main():
     check_map_created(pipe_text)
     assert check_map_created(pipe_text), 'Error Creating Map'
 
-
     # Move wsel tiffs from plan directory to wkdir
-    collect_output_data(jobID) 
+    rasGridRename = collect_output_data(jobID) 
 
     # Read in point & wsel data
     points = PointData(local_point_data)
@@ -98,7 +98,7 @@ def main():
 
     # Clean tmp files & copy results to s3
     save_files = clean_workspace(wkdir)
-    assert len(save_files) == 5
+    #assert len(save_files) == 5
 
 
     for s in save_files:

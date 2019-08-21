@@ -8,7 +8,9 @@ import io
 import geopandas as gpd
 import pandas as pd
 from io import BytesIO
+import rasterio
 import gdal
+gdal.UseExceptions()
 
 try:
     import boto3
@@ -117,32 +119,82 @@ class ResultsZip:
         """
         return self._contents
 
+class RasModel(object):
+    '''
+    This object holds information for the files stored in a hec-ras zip file used for STARRII PFRA study.
+    If path starts with s3 then the code will run from s3 zipfile, otherwise path is expected
+    to be a string path to a zipped local model (e.g. *.zip)
+    '''
+    def __init__(self, path:str, s3_data:bool=True, zipped:bool=True, verbose:bool=False):
+        assert 'zip' in path, "Model files must be stored in a .zip file"
+
+        def getS3Zip(self):
+            '''Returns zipfile data from s3'''
+            path_parts = pl.PurePosixPath(self.s3path).parts
+            bucket = path_parts[1]
+            key = '/'.join(path_parts[2:])
+            obj = s3.Object(bucket_name=bucket, key=key)
+            buffer = io.BytesIO(obj.get()["Body"].read())
+            return zipfile.ZipFile(buffer)
+
+        self.s3path      = path
+        self.name        = str(pl.PurePosixPath(self.s3path).name).replace('.zip','')
+        self._modelType  = self.name.split('_')[1][0]
+        self._subType    = self.name.split('_')[2]
+        self._zipfile    = getS3Zip(self)
+        self._contents   = [x.filename for x in self._zipfile.infolist()]
+
+        try:
+            self.prj_file = [x for x in self._contents if '{}.prj'.format(self.name) in x][0]
+        except:
+            print('No prj file found')
+
+    @property
+    def zipfile(self):
+        return self._zipfile
+
+    @property
+    def subType(self):
+        return self._subType
+
+    @property
+    def modelType(self):
+        modelType  = self._modelType
+        assert modelType =='F' or modelType == 'P', 'Check Model Nomenclature, expected a P or F Model, found {}'.format(modelType)
+        if self._modelType =='F':
+            return 'Fluvial'
+
+        elif self._modelType =='P':
+            return 'Pluvial'
+
+    @property
+    def contents(self):
+        return self._contents
+
     
 class PointData:
-    
-    def __init__(self, shapefile:str) -> bool:
-        
-        self.required_fields = ['BLDG_DED', 'BLDG_LIMIT']
+    def __init__(self, shapefile:str, fields:list =['plus_code']) -> bool:
+        self.required_fields = fields
         self._shapefile  = shapefile
         self._shapefile_path  = pl.PurePosixPath(self._shapefile)
-        
+
         def get_geodataframe(self):
             return gpd.read_file(self._shapefile)
-        
+
         self.geodataframe = get_geodataframe(self)
-        
+
         def check_fields(self):
             '''Check required fields'''
             missing_fields = [f for f in self.required_fields if f not in self.geodataframe.columns]
             assert len(missing_fields) < 1, "Required fields not found in shapefile: {}".format(str(missing_fields)) 
-            
+
         self._field_check = check_fields(self)
-        
+
         def get_projection(self):
             '''return projection'''
             return self.geodataframe.crs
             pass
-        
+
         self._current_projection = get_projection(self)
         
     @property
@@ -257,24 +309,24 @@ def s3List(bucketName, prefixName, nameSelector, fileformat):
         
     return pathsList
 
-def mapper(fnc):
-    '''Decorator for query_gdf to pass all points as a list'''
-    def inner(gdf, gdf_index, gt, rb):
-        noDataValue = rb.GetNoDataValue()
-        return [fnc(gdf,idx, gt, rb) for idx in list(gdf_index)]
-    return inner
-
-@mapper
-def query_gdf(gdf: gpd.geodataframe, idx:int,  gt: any, rb: any, point_id:str='ITEMID') -> dict:
+def query_gdf(gdf: gpd.geodataframe, gt: any, rb: any, point_id:str) -> dict:
     """
     Return point: pixel value pair for a given row in geodataframe
     """
-    pointID = gdf[point_id].iloc[idx]
-    x, y = gdf.iloc[idx].geometry.x, gdf.iloc[idx].geometry.y
-    px = int((x-gt[0]) / gt[1])   
-    py = int((y-gt[3]) / gt[5])   
-    pixel_value = rb.ReadAsArray(px,py,1,1)[0][0]
-    return {pointID:pixel_value}
+    results={}
+    for idx in gdf.index:
+        pointID = gdf[point_id].iloc[idx]
+        x, y = gdf.iloc[idx].geometry.x, gdf.iloc[idx].geometry.y
+        px = int((x-gt[0]) / gt[1])   
+        py = int((y-gt[3]) / gt[5])  
+        try:
+            pixel_value = rb.ReadAsArray(px,py,1,1)[0][0]
+            results[pointID] = pixel_value
+        except TypeError as e:
+            results[pointID] = 'Error, verify projection is correct and Point is whithini Tiff bounds'
+            
+    return results
+
 
 def extract_values_at_points(points:gpd.geodataframe.GeoDataFrame, tiffs:list) -> pd.DataFrame:
     """Identifies raster values at a given series of points returning a DataFrame."""
