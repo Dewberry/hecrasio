@@ -1,6 +1,8 @@
 """
 PFRA Module for working with HEC-RAS model output files
 """
+import os
+import shutil
 import gdal
 from time import time
 import geopandas as gpd
@@ -812,3 +814,34 @@ def plotBCs(results, domain:str):
                 ax.set_xlabel('Days')
                 ax.plot(v[:, 0], v[:, 1])
                 ax.grid()
+
+def identify_unique_values(sum_table:pd.core.frame.DataFrame, result_table:pd.core.frame.DataFrame) -> pd.core.frame.DataFrame:
+    """
+    Identifies unique values within a results table for a given attribute.
+    """
+    for i in sum_table.index:
+        dtype = type(result_table[i][0])
+        if dtype is int or dtype is float:
+            sum_table.loc[i]['Unique_Values'] = list(np.unique(result_table[i]))
+        elif dtype is str:
+            sum_table.loc[i]['Unique_Values'] = list(set(result_table[i]))
+        elif dtype is list:
+            series_list = [elem[0] for elem in result_table[i]]
+            list_dtype = type(series_list[0])
+            if list_dtype is int or list_dtype is float:
+                sum_table.loc[i]['Unique_Values'] = list(np.unique(series_list))
+            elif list_dtype is str:
+                sum_table.loc[i]['Unique_Values'] = list(set(series_list))
+            else:
+                print("Dtype {} is not currently supported for variable {}".format(dtype, i))
+        else:
+            print("Dtype {} is not currently supported for variable {}".format(dtype, i))
+    return sum_table
+
+def validate_by_threshold(pd_df, attr, value_list, threshold, results_table_df):
+    """Validate the results table raising warnings if any values reported in the data frame are above a given
+    value. Report which notebooks are above that value.
+    """
+    pd_df.loc[attr]['Warnings'] = 'WARNING' if any([value > threshold for value in value_list]) else 'PASS'
+    pd_df.loc[attr]['Offending_Nbs'] = [results_table_df.index[i] for i, value in enumerate(list(results_table_df[attr])) if value > threshold]
+    return pd_df
