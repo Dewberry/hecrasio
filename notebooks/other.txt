@@ -1,0 +1,5 @@
+Plots
+
+1. Compuation time: where x-axis is events (e0001 ==> 1) and y-axis is runtime.
+2. Volume Error Percent: where x-axis is events (e0001 ==> 1) and y-axis is vol error pct.
+3. Error vs Computation time
