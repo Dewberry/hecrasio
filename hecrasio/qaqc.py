@@ -863,3 +863,13 @@ def make_qaqc_table(books:list) -> pd.core.frame.DataFrame:
         result_dict = dict(ChainMap(*[list(json.loads(scrap).values())[0] for scrap in results.scraps]))
         results_dict[nb] = result_dict
     return pd.DataFrame.from_dict(results_dict).T
+
+def fancy_report(nbs:list, values:list) -> None:
+    print("{0: <20} {1}".format('Notebook', 'Value'))
+    print("-"*79)
+    for i in range(len(nbs)):
+        print("{0: <20} {1}".format(nbs[i], values[i]))
+
+def report_header(variable:str):
+    print("\nNow evaluating {}...\n".format(variable))
+    print("The following notebooks have alarming values for this attribute\n")
