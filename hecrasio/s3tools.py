@@ -168,3 +168,24 @@ def upload_file(file_name, bucket, object_name=None):
         logging.error(e)
         return False
     return True
+
+
+def s3_nbs(bucket: str, prefix:str, fileformat:str='.ipynb') -> list:
+    """
+    From function s3List, implemented here as a class method.
+    """
+    s3_client = boto3.client('s3')
+    keys = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    keysList = [keys]
+    pathsList = []
+    
+    while keys['IsTruncated'] is True:
+        keys = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix,
+                                         ContinuationToken=keys['NextContinuationToken'])
+        keysList.append(keys)
+    for key in keysList:
+        key_matches = [elem['Key'] for elem in key['Contents'] if elem['Key'].find('{}'.format(nameSelector))>=0 and elem['Key'].endswith(fileformat)]
+        paths = ['s3://{0}/{1}'.format(bucket, key) for  key in key_matches]
+        pathsList.extend(paths)
+
+    return pathsList

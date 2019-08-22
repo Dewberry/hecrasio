@@ -6,16 +6,23 @@
 
 # Description
 
-**hecrasio** is a collection of tools to read results from [HEC-RAS](https://www.hec.usace.army.mil/software/hec-ras/).
+**hecrasio** is a collection of tools to read results from [HEC-RAS](https://www.hec.usace.army.mil/software/hec-ras/) providing quality assurance and control (QA/QC) of one or more notebooks.
 
 ## Contents
 
 ##### Hecrasio
-- __hecrasio__: Codebase with _core_ and _qaqc_ modules.
+- __hecrasio__: Codebase with _core_, _qaqc_, and _s3tools_ modules.
 
 ##### Notebooks:
-- [__QAQC-FluvialTest__](./notebooks/QAQC-FluvialTest.ipynb): Identifies global issues in fluvial models (e.g. model inputs and results for each domain) that require follow-up responses from the modeler.
-- [__QAQC-PluvialTest__](./notebooks/QAQC-PluvialTest.ipynb): Identifies global issues in pluvial models (e.g. model inputs and results for each domain) that require follow-up responses from the modeler.
+- [__QAQC-PFRA__](./QAQC-PFRA.ipynb): Provides QA/QC of an individual model.
+- [__Summary-QAQC__](./Summary-QAQC.ipynb): Summarizes the QA/QC report returned by `QAQC-PFRA` for one or more notebooks.
+
+#### Python Files
+- `run_postprocess_jobs`: _to be included_
+- `PostProcessor`: _to be included_
+
+##### Command File
+- `runall`: Executes `PostProcessor` on a range of PFRA results.
 
 ## Launch
 To create a virtual environment using [Anaconda](https://www.anaconda.com/distribution/)
