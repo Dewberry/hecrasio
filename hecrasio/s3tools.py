@@ -16,6 +16,7 @@ from glob import glob
 import logging
 import boto3
 from botocore.exceptions import ClientError
+import scrapbook as sb
 
 
 OUTPUT_EXTS = ['.html', '.ipynb', '.csv', '.tif', '.vrt']
@@ -190,3 +191,30 @@ def s3_nbs(bucket:str, prefix:str, nameSelector:str='', fileformat:str='.ipynb')
         pathsList.extend(paths)
 
     return pathsList
+
+def pull_scraps(**kwargs):
+    """Pull scraps from one or more notebooks on S3 with dynamic
+    single- or multi-folder support.
+    
+    :Key Word Arguments:
+        :single_folder str: Single folder on S3 containing all
+            notebooks of interest.
+        :multi_folder str:  Only checks for presence currently.
+            Utilizes s3_nbs to search for notebooks matching
+            criteria.
+            :bucket str: Bucket of interest.
+            :prefix str: Prefix selector.
+            :name_selector str: Name selector.
+    """
+    keys = list(kwargs.keys())
+    if 'single_folder' in keys:
+        s3_path = kwargs['single_folder']
+        
+        return list(sb.read_notebooks(s3_path).items())
+    elif 'multi_folder' in keys:
+        bucket = kwargs['bucket']
+        prefix = kwargs['prefix']
+        name_selector = kwargs['name_selector']
+        
+        listed_nbs = s3_nbs(bucket, prefix, name_selector)
+        return [(nb.split('/')[-1].split('.')[0], sb.read_notebook(nb)) for nb in listed_nbs]
