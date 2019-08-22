@@ -1,14 +1,13 @@
-# Utilities for water surface elevation operations.
-#
-# Authors: Alec Brazeau (abrazeau@dewberry.com)
-#          Dewberry Engineers Inc.
-#
-# Dates:
-#        26 JULY 2019 -- Initialized as package
-#
-# ----------------------------------------------------------------------
+"""
+PFRA Module for creating heatmap tifs.
+"""
 
-import os, pathlib, psutil, boto3, rasterio, gdal, h5py
+import os
+import psutil
+import boto3
+import rasterio
+import gdal
+import h5py
 from shapely.geometry import Polygon
 from glob import glob
 from multiprocessing import cpu_count
@@ -20,9 +19,7 @@ gdal.UseExceptions()
 s3 = boto3.resource("s3")
 
 
-def s3List(
-    bucketName: str, prefixName: str, nameSelector: str, fileformat: str
-) -> list:
+def s3List(bucketName: str, prefixName: str, nameSelector: str, fileformat: str) -> list:
     """Returns an unlimited list of files on S3 when provided with an
         S3 bucket and object prefix. Files can be filered by to those
         meeting specific naming conventions with the name selector
@@ -36,24 +33,16 @@ def s3List(
     # While the boto3 returned objects contains a value of true for 'IsTruncated'
     while keys["IsTruncated"] is True:
         # Append to the list of keys
-        keys = s3.list_objects_v2(
-            Bucket=bucketName,
-            Prefix=prefixName,
-            ContinuationToken=keys["NextContinuationToken"],
-        )
+        keys = s3.list_objects_v2(Bucket=bucketName, Prefix=prefixName, ContinuationToken=keys["NextContinuationToken"])
         keysList.append(keys)
-
     # Create a list of objects from the supplied keys
     pathsList = []
     for key in keysList:
-        paths = [
-            "s3://" + bucketName + "/" + elem["Key"]
-            for elem in key["Contents"]
-            if elem["Key"].find("{}".format(nameSelector)) >= 0
-            and elem["Key"].endswith(fileformat)
-        ]
+        paths = ["s3://" + bucketName + "/" + elem["Key"]
+                 for elem in key["Contents"]
+                 if elem["Key"].find("{}".format(nameSelector)) >= 0
+                 and elem["Key"].endswith(fileformat)]
         pathsList = pathsList + paths
-
     return pathsList
 
 
@@ -90,12 +79,10 @@ def bool_wse_to_hdf(wse_grid: str, model_run_id: str, h5: str, n_row_slices: int
             chunk = rb.ReadAsArray(0, ystep * i, xsize, ystep)
             chunk_bool = chunk != null_value
             with h5py.File(h5, "a") as hf:
-                hf.create_dataset(
-                    "chunk{}".format(i),
-                    data=chunk_bool.astype(np.int8),
-                    compression="gzip",
-                    compression_opts=9,
-                )
+                hf.create_dataset("chunk{}".format(i),
+                                  data=chunk_bool.astype(np.int8),
+                                  compression="gzip",
+                                  compression_opts=9)
         else:
             chunk = rb.ReadAsArray(0, ystep * i, xsize, ystep + yresidual)
             chunk_bool = chunk != null_value
@@ -110,9 +97,7 @@ def bool_wse_to_hdf(wse_grid: str, model_run_id: str, h5: str, n_row_slices: int
     return None
 
 
-def daskbag_bool_wse_hdf_local(
-    wse_grid: str, num_chunks: int, bool_dir: str = "bool_hdfs"
-):
+def daskbag_bool_wse_hdf_local(wse_grid: str, num_chunks: int, bool_dir: str = "bool_hdfs"):
     """Dask wrapper for bool_wse_to_hdf function"""
     try:
         if not os.path.exists(bool_dir):
@@ -125,12 +110,10 @@ def daskbag_bool_wse_hdf_local(
     return None
 
 
-def write_weighted_chunks_local(
-    c: int,
-    weights_dict: dict,
-    bool_dir: str = "bool_hdfs",
-    weighted_dir: str = "weighted_chunks",
-):
+def write_weighted_chunks_local(c: int,
+                                weights_dict: dict,
+                                bool_dir: str = "bool_hdfs",
+                                weighted_dir: str = "weighted_chunks"):
     """Apply weights to each chunk across many bool hdfs, then write 1 hdf per chunk"""
     try:
         if not os.path.exists(weighted_dir):
@@ -149,7 +132,6 @@ def write_weighted_chunks_local(
             with h5py.File(f, "r") as hf:
                 chunk = f"chunk{c}"
                 data += np.array(hf[chunk]) * weight
-
     weighted_outfile = os.path.join(weighted_dir, f"weighted_{c}_.hdf")
     with h5py.File(weighted_outfile, "a") as hfout:
         hfout.create_dataset("chunk", data=data, compression="gzip", compression_opts=9)
@@ -183,11 +165,9 @@ def get_num_chunks_local(tif):
     ysize = rb.YSize
     in_mem = xsize * ysize * 4 / 1e9
     print(f"Opening this raster will equate to roughly {round(in_mem,2)} GB in memory.")
-
     exact_num_chunks = 1
     while (in_mem * 3) / exact_num_chunks > 2:
         exact_num_chunks += 1
-
     if exact_num_chunks < 10:
         num_chunks = 10
     elif exact_num_chunks < 20:
@@ -196,20 +176,16 @@ def get_num_chunks_local(tif):
         print("This is a huge raster. `num_chunks` is being set to 30.")
         num_chunks = 30
     print(f"Using {num_chunks} for the number of chunks.")
-
     my_mem = psutil.virtual_memory().total / 1e9
     chunk_mem = in_mem * 3 / num_chunks
     num_workers = int(my_mem / chunk_mem)
     if num_workers > 2.5 * cpu_count():
         num_workers = int(2.5 * cpu_count())
     print(f"Using {num_workers} for the number of workers.")
-
     return num_chunks, num_workers
 
 
-def writeTifByChunks_local(
-    tifTemplate: str, outfile: str, chunk_hdfs: list, heatmap_dir: str
-):
+def writeTifByChunks_local(tifTemplate: str, outfile: str, chunk_hdfs: list, heatmap_dir: str):
     """
     Given a sorted list of local HDF files representing chunks of a tif,
     write the final output tif in chunks (for memory management).
@@ -227,19 +203,15 @@ def writeTifByChunks_local(
                 if i == 0:
                     ystart = 0
                     ystop = chunkArray.shape[0]
-                    dst.write(
-                        chunkArray.astype(rasterio.float32),
-                        1,
-                        window=((ystart, ystop), (0, chunkArray.shape[1])),
-                    )
+                    dst.write(chunkArray.astype(rasterio.float32),
+                              1,
+                              window=((ystart, ystop), (0, chunkArray.shape[1])))
                 else:
                     ystart += chunkArray.shape[0]
                     ystop += chunkArray.shape[0]
-                    dst.write(
-                        chunkArray.astype(rasterio.float32),
-                        1,
-                        window=((ystart, ystop), (0, chunkArray.shape[1])),
-                    )
+                    dst.write(chunkArray.astype(rasterio.float32),
+                              1,
+                              window=((ystart, ystop), (0, chunkArray.shape[1])))
                 del chunkArray
     return print(f"{os.path.join(heatmap_dir, outfile)} has been written!")
 
@@ -265,9 +237,7 @@ def clip_rast(polygon, raster, out_path):
     Arguments raster and out_path are local path strings.
     """
     with rasterio.open(raster) as data:
-        out_image, out_transform = rasterio.mask.mask(
-            data, polygon, nodata=data.nodata, crop=True
-        )
+        out_image, out_transform = rasterio.mask.mask(data, polygon, nodata=data.nodata, crop=True)
         out_meta = data.meta.copy()
     out_meta.update(
         {
