@@ -11,11 +11,12 @@
 ## Contents
 
 ##### Hecrasio
-- __hecrasio__: Codebase with _core_, _qaqc_, and _s3tools_ modules.
+- __hecrasio__: Codebase with _core_, _qaqc_, _s3tools_, and _heatmap_ modules.
 
 ##### Notebooks:
 - [__QAQC-PFRA__](./QAQC-PFRA.ipynb): Provides QA/QC of an individual model.
 - [__Summary-QAQC__](./Summary-QAQC.ipynb): Summarizes the QA/QC report returned by `QAQC-PFRA` for one or more notebooks.
+- [__Make-Heatmap__](./Make-Heatmap.ipynb): Creates heat maps from a weights file and a a set of WSE tifs on s3. Utilizes dask for local parallel processing.
 
 #### Python Files
 - `run_postprocess_jobs`: _to be included_
@@ -32,7 +33,7 @@ To create a virtual environment using [Anaconda](https://www.anaconda.com/distri
 3. Copy and execute: while read requirement; do conda install --yes $requirement; done < requirements.txt
 4. Note, the above will not install boto3. Do so by copying and executing: conda install -c conda-forge boto3=1.9.129
 5. Copy and execute: conda install -c conda-forge awscli
-6. Configure aws cli by executing: aws congigure
+6. Configure aws cli by executing: aws configure
 7. Copy and execute: conda install notebook ipykernel
 8. Copy and execute: ipython kernelspec install-self
 ```
