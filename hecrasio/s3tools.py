@@ -170,9 +170,10 @@ def upload_file(file_name, bucket, object_name=None):
     return True
 
 
-def s3_nbs(bucket: str, prefix:str, fileformat:str='.ipynb') -> list:
+def s3_nbs(bucket:str, prefix:str, nameSelector:str='', fileformat:str='.ipynb') -> list:
     """
-    From function s3List, implemented here as a class method.
+    Lists notebooks on S3 when provided with the bucket, object prefix, and
+    file format. The default fileformat is IPython (i.e. Jupyter) Notebooks.
     """
     s3_client = boto3.client('s3')
     keys = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
