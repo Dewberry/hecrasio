@@ -486,7 +486,7 @@ def subset_data(grouping_polys: gpd.geodataframe.GeoDataFrame, thresheld_gdf: gp
         each face centroid, the second list contains counts of instances above
         a threshold, and the third lists faces within the buffered bounding
         box of a group of centroids.
-
+        
     :param grouping_polys:
     :param thresheld_gdf:
     :param count_gdf:
@@ -584,8 +584,10 @@ def velCheckMain(results, domain, plot_tseries=5):
             for i in depths.index:
                 DepthVelPlot(depths.loc[i], velocities.loc[i], i)
 
-        # print("Completed in {} seconds.".format(round(time() - start)))
         plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+        return pd.DataFrame(data=[len(pd.concat(count_list)), max(pd.concat(max_list)['max'])],
+                            columns=['Results'],
+                            index=['Instability Count', 'Max Velocity'])
     else:
         print('No Velocity Errors Found in Domain {}'.format(domain))
 
@@ -601,7 +603,7 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
             plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
             plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
             plotBCs(result, domain) 
-            velCheckMain(result, domain, plot_tseries)
+            return velCheckMain(result, domain, plot_tseries)
 
     else:
         domain = domains[0]
@@ -609,7 +611,7 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
         plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
         plot_extreme_edges(result.Extreme_Edges, result.Perimeter)
         plotBCs(result, domain)
-        velCheckMain(result, domain, plot_tseries)
+        return velCheckMain(result, domain, plot_tseries)
 
 def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, idx):
     """
@@ -864,12 +866,13 @@ def make_qaqc_table(books:list) -> pd.core.frame.DataFrame:
         results_dict[nb] = result_dict
     return pd.DataFrame.from_dict(results_dict).T
 
-def fancy_report(nbs:list, values:list) -> None:
-    print("{0: <20} {1}".format('Notebook', 'Value'))
+def fancy_report(nbs:list, values:list, units:str) -> None:
+    print("The following notebooks have alarming values for this attribute\n")
+    print("{0: <20} {1} ({2})".format('Notebook', 'Value', units))
     print("-"*79)
     for i in range(len(nbs)):
         print("{0: <20} {1}".format(nbs[i], values[i]))
 
 def report_header(variable:str):
-    print("\nNow evaluating {}...\n".format(variable))
-    print("The following notebooks have alarming values for this attribute\n")
+    print("\nNow evaluating: {}\n".format(variable))
+    
