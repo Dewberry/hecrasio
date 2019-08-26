@@ -14,6 +14,8 @@ import pandas as pd
 import h5py
 from matplotlib import pyplot as plt
 from hecrasio.core import ResultsZip
+from collections import ChainMap
+import json
 
 # Add additional keys as needed
 GEOMETRY_ATTRIBUTES = '/Geometry/2D Flow Areas/Attributes'
@@ -484,7 +486,7 @@ def subset_data(grouping_polys: gpd.geodataframe.GeoDataFrame, thresheld_gdf: gp
         each face centroid, the second list contains counts of instances above
         a threshold, and the third lists faces within the buffered bounding
         box of a group of centroids.
-
+        
     :param grouping_polys:
     :param thresheld_gdf:
     :param count_gdf:
@@ -582,8 +584,10 @@ def velCheckMain(results, domain, plot_tseries=5):
             for i in depths.index:
                 DepthVelPlot(depths.loc[i], velocities.loc[i], i)
 
-        # print("Completed in {} seconds.".format(round(time() - start)))
         plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+        return pd.DataFrame(data=[len(pd.concat(count_list)), max(pd.concat(max_list)['max'])],
+                            columns=['Results'],
+                            index=['Instability Count', 'Max Velocity'])
     else:
         print('No Velocity Errors Found in Domain {}'.format(domain))
 
@@ -599,7 +603,7 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
             plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
             plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
             plotBCs(result, domain) 
-            velCheckMain(result, domain, plot_tseries)
+            return velCheckMain(result, domain, plot_tseries)
 
     else:
         domain = domains[0]
@@ -607,7 +611,7 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
         plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
         plot_extreme_edges(result.Extreme_Edges, result.Perimeter)
         plotBCs(result, domain)
-        velCheckMain(result, domain, plot_tseries)
+        return velCheckMain(result, domain, plot_tseries)
 
 def plot_instabilities(max_list, count_list, gdf_face, gdf_face_all, ex_groups, idx):
     """
@@ -815,28 +819,33 @@ def plotBCs(results, domain:str):
                 ax.plot(v[:, 0], v[:, 1])
                 ax.grid()
 
-def identify_unique_values(sum_table:pd.core.frame.DataFrame, result_table:pd.core.frame.DataFrame) -> pd.core.frame.DataFrame:
+def identify_unique_values(result_table:pd.core.frame.DataFrame,
+                           desired_columns:list) -> pd.core.frame.DataFrame:
     """
     Identifies unique values within a results table for a given attribute.
     """
-    for i in sum_table.index:
+    df = pd.DataFrame(columns=['Unique_Values'])
+    df['Result_Attribute'] = pd.Index(desired_columns)
+    df.set_index('Result_Attribute', drop=True, inplace=True)
+    
+    for i in df.index:
         dtype = type(result_table[i][0])
         if dtype is int or dtype is float:
-            sum_table.loc[i]['Unique_Values'] = list(np.unique(result_table[i]))
+            df.loc[i]['Unique_Values'] = list(np.unique(result_table[i]))
         elif dtype is str:
-            sum_table.loc[i]['Unique_Values'] = list(set(result_table[i]))
+            df.loc[i]['Unique_Values'] = list(set(result_table[i]))
         elif dtype is list:
             series_list = [elem[0] for elem in result_table[i]]
             list_dtype = type(series_list[0])
             if list_dtype is int or list_dtype is float:
-                sum_table.loc[i]['Unique_Values'] = list(np.unique(series_list))
+                df.loc[i]['Unique_Values'] = list(np.unique(series_list))
             elif list_dtype is str:
-                sum_table.loc[i]['Unique_Values'] = list(set(series_list))
+                df.loc[i]['Unique_Values'] = list(set(series_list))
             else:
                 print("Dtype {} is not currently supported for variable {}".format(dtype, i))
         else:
             print("Dtype {} is not currently supported for variable {}".format(dtype, i))
-    return sum_table
+    return df
 
 def validate_by_threshold(pd_df, attr, value_list, threshold, results_table_df):
     """Validate the results table raising warnings if any values reported in the data frame are above a given
@@ -845,3 +854,25 @@ def validate_by_threshold(pd_df, attr, value_list, threshold, results_table_df):
     pd_df.loc[attr]['Warnings'] = 'WARNING' if any([value > threshold for value in value_list]) else 'PASS'
     pd_df.loc[attr]['Offending_Nbs'] = [results_table_df.index[i] for i, value in enumerate(list(results_table_df[attr])) if value > threshold]
     return pd_df
+
+def make_qaqc_table(books:list) -> pd.core.frame.DataFrame:
+    """Takes a list of tuples representing notebook scraps and creates
+    a Pandas DataFrame showing results.
+    """
+    results_dict = {}
+    for tup in books:
+        nb, results = tup
+        result_dict = dict(ChainMap(*[list(json.loads(scrap).values())[0] for scrap in results.scraps]))
+        results_dict[nb] = result_dict
+    return pd.DataFrame.from_dict(results_dict).T
+
+def fancy_report(nbs:list, values:list, units:str) -> None:
+    print("The following notebooks have alarming values for this attribute\n")
+    print("{0: <20} {1} ({2})".format('Notebook', 'Value', units))
+    print("-"*79)
+    for i in range(len(nbs)):
+        print("{0: <20} {1}".format(nbs[i], values[i]))
+
+def report_header(variable:str):
+    print("\nNow evaluating: {}\n".format(variable))
+    
