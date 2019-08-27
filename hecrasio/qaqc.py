@@ -876,3 +876,39 @@ def fancy_report(nbs:list, values:list, units:str) -> None:
 def report_header(variable:str):
     print("\nNow evaluating: {}\n".format(variable))
     
+def create_summary_table(df:pd.core.frame.DataFrame, results_df:pd.core.frame.DataFrame):
+    """Evaluates the unique dataframe for values which fail thresholds and string matches"""
+    for i in df.index:
+        if i == 'Vol Accounting Error':
+            report_header(i)
+            nbs = results_df[abs(results_df[i]) > 0][i].index
+            values = results_df[abs(results_df[i]) > 0][i].values
+            fancy_report(nbs, values, 'none')
+            print("-"*79)
+        elif i == 'Solution':
+            report_header(i)
+            nbs = results_df[results_df[i] != 'Unsteady Finished Successfully'][i].index
+            values = results_df[results_df[i] != 'Unsteady Finished Successfully'][i].values
+            if len(nbs) < 1:
+                print("No errors found.\n\nMoving along...")
+            else:
+                fancy_report(nbs, values, 'none')
+            print("-"*79)
+        elif i == 'Instability Count':
+            report_header(i)
+            nbs = results_df[results_df[i] > 0 ][i].index
+            values = results_df[results_df[i] > 0][i].values
+            if len(nbs) < 1:
+                print("No errors found.\n\nMoving along...")
+            else:
+                fancy_report(nbs, values, 'n')
+            print("-"*79)
+        elif i == 'Max Velocity':
+            report_header(i)
+            nbs = results_df[results_df[i] > 0 ][i].index
+            values = results_df[results_df[i] > 0][i].values
+            if len(nbs) < 1:
+                print("No errors found.\n\nMoving along...")
+            else:
+                fancy_report(nbs, values, 'ft/s')
+            print("-"*79)
