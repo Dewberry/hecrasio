@@ -1,3 +1,12 @@
+# local data storage
+data/
+
+# pycharm
+.idea/
+
+# dask
+dask-worker-space/
+
 # RAS Output data
 *.hdf
 
