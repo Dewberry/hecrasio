@@ -594,8 +594,10 @@ def velCheckMain(results, domain, plot_tseries=5):
 
             for i in depths.index:
                 DepthVelPlot(depths.loc[i], velocities.loc[i], i)
-
-        plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+        try:
+            plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+        except:
+            print('No disparate instabilities found. All instabilities must be grouped!')
         return pd.DataFrame(data=[len(pd.concat(count_list)), max(pd.concat(max_list)['max'])],
                             columns=['Results'],
                             index=['Instability Count', 'Max Velocity'])
