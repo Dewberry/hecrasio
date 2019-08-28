@@ -46,7 +46,10 @@ class HDFResultsFile:
     def __init__(self, model: ResultsZip, path: str):
 
         self.__model = model
-        self.__zip_path = path
+        if '.zip' in path:
+            self.__zip_path = path
+        else:
+            self.__path = path
 
         def decoder():
             """
@@ -63,8 +66,11 @@ class HDFResultsFile:
             Add Description
             :return:
             """
-            self.__model.zipfile.extract(self.__zip_path)
-            return h5py.File(self.__zip_path, 'r')
+            try:
+                self.__model.zipfile.extract(self.__zip_path)
+                return h5py.File(self.__zip_path, 'r')
+            except:
+                return h5py.File(self.__path, 'r')
 
         def get_2dFlowArea_data():
             """
