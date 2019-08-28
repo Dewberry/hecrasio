@@ -600,6 +600,10 @@ def velCheckMain(results, domain, plot_tseries=5):
                             columns=['Results'],
                             index=['Instability Count', 'Max Velocity'])
     else:
+        max_vel = results.Face_Velocity.values.max()
+        return pd.DataFrame(data=[0, max_vel],
+                            columns=['Results'],
+                            index=['Instability Count', 'Max Velocity'])
         print('No Velocity Errors Found in Domain {}'.format(domain))
 
 # Plotting Functions ------------------------------------------------------------
