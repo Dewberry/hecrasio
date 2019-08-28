@@ -1,8 +1,6 @@
 """
 PFRA Module for working with HEC-RAS model output files
 """
-import os
-import shutil
 import gdal
 from time import time
 import geopandas as gpd
@@ -14,6 +12,13 @@ import pandas as pd
 import h5py
 from matplotlib import pyplot as plt
 from hecrasio.core import ResultsZip
+from io import BytesIO
+import boto3
+import rasterio
+from rasterio.plot import show
+import pathlib as pl
+import os
+import shutil
 from collections import ChainMap
 import json
 
