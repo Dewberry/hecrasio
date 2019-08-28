@@ -1,8 +1,6 @@
 """
 PFRA Module for working with HEC-RAS model output files
 """
-import os
-import shutil
 import gdal
 from time import time
 import geopandas as gpd
@@ -14,6 +12,13 @@ import pandas as pd
 import h5py
 from matplotlib import pyplot as plt
 from hecrasio.core import ResultsZip
+from io import BytesIO
+import boto3
+import rasterio
+from rasterio.plot import show
+import pathlib as pl
+import os
+import shutil
 from collections import ChainMap
 import json
 
@@ -46,7 +51,10 @@ class HDFResultsFile:
     def __init__(self, model: ResultsZip, path: str):
 
         self.__model = model
-        self.__zip_path = path
+        if '.zip' in path:
+            self.__zip_path = path
+        else:
+            self.__path = path
 
         def decoder():
             """
@@ -63,8 +71,11 @@ class HDFResultsFile:
             Add Description
             :return:
             """
-            self.__model.zipfile.extract(self.__zip_path)
-            return h5py.File(self.__zip_path, 'r')
+            try:
+                self.__model.zipfile.extract(self.__zip_path)
+                return h5py.File(self.__zip_path, 'r')
+            except:
+                return h5py.File(self.__path, 'r')
 
         def get_2dFlowArea_data():
             """
@@ -589,6 +600,10 @@ def velCheckMain(results, domain, plot_tseries=5):
                             columns=['Results'],
                             index=['Instability Count', 'Max Velocity'])
     else:
+        max_vel = results.Face_Velocity.values.max()
+        return pd.DataFrame(data=[0, max_vel],
+                            columns=['Results'],
+                            index=['Instability Count', 'Max Velocity'])
         print('No Velocity Errors Found in Domain {}'.format(domain))
 
 # Plotting Functions ------------------------------------------------------------
