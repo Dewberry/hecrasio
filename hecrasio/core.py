@@ -34,20 +34,32 @@ class ResultsZip:
         self._pure_path = pl.Path(path)
         self._pfra = pfra
 
-        def get_s3_zip():
+        def get_s3_data():
             """
-            If path starts with s3 then the code will run from s3 zipfile, otherwise path is expected
-            to be a string path to a zipped local model (e.g. *.zip)
+            If path starts with s3 then the code will run from s3 file, otherwise path is expected
+            to be a string path to a local model.
             """
             obj = s3.Object(bucket_name=self._pure_path.parts[1],
                             key='/'.join(self._pure_path.parts[2:])
                             )
-            buffer = io.BytesIO(obj.get()["Body"].read())
-            return zipfile.ZipFile(buffer)
+            if file_type == ".zip":
+                buffer = io.BytesIO(obj.get()["Body"].read())
+                return zipfile.ZipFile(buffer)
+            elif file_type == ".hdf":
+                out_file = './'+self._pure_path.parts[-1]
+                obj.download_file(out_file)
+                return out_file
+            else:
+                print("File type failed")
 
         if 's3' in self._abspath:
             self._cloud_platform = 'aws'
-            self._zipfile = get_s3_zip()
+            if '.zip' in self._abspath:
+                self._zipfile = get_s3_data('.zip')
+            elif '.hdf' in self._abspath:
+                self._hdf = get_s3_data('.hdf')
+            else:
+                print("File type not currently supported.")
 
         elif 'gs' in self._abspath:
             """Placeholder to method for google"""
