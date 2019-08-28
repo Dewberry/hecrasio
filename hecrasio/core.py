@@ -362,3 +362,11 @@ def extract_values_at_points(points:gpd.geodataframe.GeoDataFrame, tiffs:list) -
             df = pd.concat([df,tmp], axis=1)
     
     return df
+
+def pull_result_paths(model:hecrasio.core.ResultsZip):
+    try:
+        assert len([f for f in model.contents if '.hdf' in f]) == 1, "Check files...too many hdf's found"
+        hdfResults_paths = [f for f in model.contents if '.hdf' in f]
+        return hdfResults_paths[0]
+    except:
+        return model.contents
