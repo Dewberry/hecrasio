@@ -48,10 +48,10 @@ class HDFResultsFile:
     Some functionality may be useful for other ras objects.
     """
 
-    def __init__(self, model: ResultsZip, path: str):
+    def __init__(self, model:ResultsZip, model_path:str, path:str):
 
         self.__model = model
-        if '.zip' in path:
+        if '.zip' in model_path:
             self.__zip_path = path
         else:
             self.__path = path
@@ -126,12 +126,16 @@ class HDFResultsFile:
 
         def get_2dSummary():
             """Add Description"""
-            table_data = self._hdfLocal[UNSTEADY_SUMMARY].attrs
-            values = [table_data[n] for n in list(table_data.keys())]
-            values = [v.decode() if isinstance(v, bytes) else v for v in values]
-            values = [str(v) if isinstance(v, list) else v for v in values]
-            return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
-
+            try:
+                table_data = self._hdfLocal[UNSTEADY_SUMMARY].attrs
+                values = [table_data[n] for n in list(table_data.keys())]
+                values = [v.decode() if isinstance(v, bytes) else v for v in values]
+                values = [str(v) if isinstance(v, list) else v for v in values]
+                return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
+            except KeyError as e:
+                print('You do not seem to have a summary table...')
+                print('Exiting.')
+                
         self._hdfLocal = local_hdf()
         self._plan_data = self._hdfLocal
         self._Plan_Information = get_planData('Plan Information')
@@ -594,8 +598,10 @@ def velCheckMain(results, domain, plot_tseries=5):
 
             for i in depths.index:
                 DepthVelPlot(depths.loc[i], velocities.loc[i], i)
-
-        plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+        try:
+            plot_disparate_instabilities(s_dict['maxes'], s_dict['counts'], results.Perimeter, domain)
+        except:
+            print('No disparate instabilities found. All instabilities must be grouped!')
         return pd.DataFrame(data=[len(pd.concat(count_list)), max(pd.concat(max_list)['max'])],
                             columns=['Results'],
                             index=['Instability Count', 'Max Velocity'])
