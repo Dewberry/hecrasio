@@ -34,7 +34,7 @@ class ResultsZip:
         self._pure_path = pl.Path(path)
         self._pfra = pfra
 
-        def get_s3_data():
+        def get_s3_data(file_type):
             """
             If path starts with s3 then the code will run from s3 file, otherwise path is expected
             to be a string path to a local model.
@@ -71,8 +71,11 @@ class ResultsZip:
 
         else:
             self._cloud_platform = None
-
-        self._contents = [x.filename for x in self._zipfile.infolist()]
+        
+        if hasattr(self, '_zipfile'):
+            self._contents = [x.filename for x in self._zipfile.infolist()]
+        else:
+            self._contents = self._hdf
 
         # Check Nomenclature rules for STARR II PFRA products
         if self._pfra:
