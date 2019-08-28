@@ -48,10 +48,10 @@ class HDFResultsFile:
     Some functionality may be useful for other ras objects.
     """
 
-    def __init__(self, model: ResultsZip, path: str):
+    def __init__(self, model:ResultsZip, model_path:str, path:str):
 
         self.__model = model
-        if '.zip' in path:
+        if '.zip' in model_path:
             self.__zip_path = path
         else:
             self.__path = path
