@@ -126,12 +126,16 @@ class HDFResultsFile:
 
         def get_2dSummary():
             """Add Description"""
-            table_data = self._hdfLocal[UNSTEADY_SUMMARY].attrs
-            values = [table_data[n] for n in list(table_data.keys())]
-            values = [v.decode() if isinstance(v, bytes) else v for v in values]
-            values = [str(v) if isinstance(v, list) else v for v in values]
-            return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
-
+            try:
+                table_data = self._hdfLocal[UNSTEADY_SUMMARY].attrs
+                values = [table_data[n] for n in list(table_data.keys())]
+                values = [v.decode() if isinstance(v, bytes) else v for v in values]
+                values = [str(v) if isinstance(v, list) else v for v in values]
+                return pd.DataFrame(data=values, index=list(table_data.keys()), columns=['Results'])
+            except KeyError as e:
+                print('You do not seem to have a summary table...')
+                print('Exiting.')
+                
         self._hdfLocal = local_hdf()
         self._plan_data = self._hdfLocal
         self._Plan_Information = get_planData('Plan Information')
