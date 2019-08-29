@@ -629,8 +629,8 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
             plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
             plotBCs(result, domain) 
             results_table[domain] = velCheckMain(result, domain, plot_tseries)
-        instability_count = sum([value.loc['Instability Count'] for value in list(results_data.values())])[0]
-        max_velocity = max([value.loc['Max Velocity'].values[0] for value in list(results_data.values())])
+        instability_count = sum([value.loc['Instability Count'] for value in list(results_table.values())])[0]
+        max_velocity = max([value.loc['Max Velocity'].values[0] for value in list(results_table.values())])
         return pd.DataFrame(data=[instability_count, max_velocity],
                             columns=['Results'],
                             index=['Instability Count', 'Max Velocity'])
