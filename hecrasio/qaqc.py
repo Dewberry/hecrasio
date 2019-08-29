@@ -206,9 +206,12 @@ class DomainResults:
 
         def get_tseries_results(table):
             """Read in data from results tables as a Pandas DataFrame"""
-            data = '{}/{}/{}'.format(TSERIES_RESULTS_2DFLOW_AREA, self._domain, table)
-            d_array = np.array(self._plan_data[data]).T
-            return pd.DataFrame(d_array)
+            try:
+                data = '{}/{}/{}'.format(TSERIES_RESULTS_2DFLOW_AREA, self._domain, table)
+                d_array = np.array(self._plan_data[data]).T
+                return pd.DataFrame(d_array)
+            except:
+                print('{} is missing from the HDF!'.format(table))
 
         def get_tseries_forcing(table):
             """This table is not domain specific"""
