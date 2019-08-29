@@ -903,14 +903,19 @@ def make_qaqc_table(books:list) -> pd.core.frame.DataFrame:
             else:
                 print('Unexpected scrap name identified, please troubleshoot!')
         results_dict[nb] = dict(ChainMap(*scrap_data))
-    return pd.DataFrame.from_dict(results_dict).T
+    df = pd.DataFrame.from_dict(results_dict).T
+    drop_nbs = list(df[df['1D Cores'] != df['1D Cores'].isnull()].index)
+    print('WARNING! The following Notebooks had null 1D Cores values. '+
+          'These notebooks were dropped from the QA/QC table with the'+
+          ' assumption these notebooks are bad: {}'.format(drop_nbs))
+    return df[df['1D Cores'] == df['1D Cores'].isnull()]
 
 def fancy_report(nbs:list, values:list, units:str) -> None:
     print("The following notebooks have alarming values for this attribute\n")
-    print("{0: <20} {1} ({2})".format('Notebook', 'Value', units))
+    print("{0: <30} {1} ({2})".format('Notebook', 'Value', units))
     print("-"*79)
     for i in range(len(nbs)):
-        print("{0: <20} {1}".format(nbs[i], values[i]))
+        print("{0: <30} {1}".format(nbs[i], values[i]))
 
 def report_header(variable:str):
     print("\nNow evaluating: {}\n".format(variable))
