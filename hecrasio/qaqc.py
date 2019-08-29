@@ -892,8 +892,17 @@ def make_qaqc_table(books:list) -> pd.core.frame.DataFrame:
     results_dict = {}
     for tup in books:
         nb, results = tup
-        result_dict = dict(ChainMap(*[list(json.loads(scrap).values())[0] for scrap in results.scraps]))
-        results_dict[nb] = result_dict
+        scrap_data = []
+        for scrap in results.scraps:
+            if scrap == 'Global Errors':
+                errors = results.scraps['Global Errors'].data
+                print("WARNING! {} had the following global errors: {}".format(nb, errors))
+            elif scrap != 'Global Errors':
+                logged_information = list(json.loads(scrap).values())[0]
+                scrap_data.append(logged_information)
+            else:
+                print('Unexpected scrap name identified, please troubleshoot!')
+        results_dict[nb] = dict(ChainMap(*scrap_data))
     return pd.DataFrame.from_dict(results_dict).T
 
 def fancy_report(nbs:list, values:list, units:str) -> None:
