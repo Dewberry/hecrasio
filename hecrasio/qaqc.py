@@ -623,11 +623,17 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
     """
     if len(domains) > 1:
         results = {domain: DomainResults(model, rasPlan, domain) for domain in domains}
+        results_table = {}
         for domain, result in results.items():
             plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
             plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
             plotBCs(result, domain) 
-            return velCheckMain(result, domain, plot_tseries)
+            results_table[domain] = velCheckMain(result, domain, plot_tseries)
+        instability_count = sum([value.loc['Instability Count'] for value in list(results_data.values())])[0]
+        max_velocity = max([value.loc['Max Velocity'].values[0] for value in list(results_data.values())])
+        return pd.DataFrame(data=[instability_count, max_velocity],
+                            columns=['Results'],
+                            index=['Instability Count', 'Max Velocity'])
 
     else:
         domain = domains[0]
