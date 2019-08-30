@@ -35,7 +35,7 @@ def get_model_paths(model_id:str)-> tuple:
         subtype = 'H00'
         
     model_input = "s3://pfra/{0}/BaseModels/{0}_{1}_{2}.zip".format(study_area, model_type, sub_type)
-    point_data =  "s3://pfra/RiskAssessment/{0}/Points/{0}_{1}_Points.zip".format(study_area, model_type)
+    point_data =  "s3://pfra/RiskAssessment/{0}/Points/{0}_{1}.zip".format(study_area, model_type)
     output_dir = model_output[:-25]
     return model_input, model_output, point_data, output_dir
 

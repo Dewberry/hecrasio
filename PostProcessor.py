@@ -21,7 +21,7 @@ def main():
     cmd = r'C:\Program Files (x86)\HEC\HEC-RAS\5.0.7\Mapper64\RasComputeMaps.exe'
 
     # Assign Wkdir ID for running multiple, Paths for Project 
-    wkdir = pl.Path(r"C:\Users\Administrator\Desktop\P{}".format(TMPID))
+    wkdir = pl.Path(r"C:\Users\Administrator\Desktop\{}".format(TMPID))
     proj_dir = pl.Path(r"C:\Users\Administrator\Desktop\{}".format(projID))
     terrain_dir = proj_dir/"Terrain"
     points_dir = proj_dir/"Points" 
@@ -36,7 +36,7 @@ def main():
             os.mkdir(p)
             
     # Get Point & Terrain Data if needed
-    local_point_data = points_dir/'{}_Points.shp'.format(projID)
+    local_point_data = points_dir/'{}.shp'.format(projID)
 
     # Download point data
     if not os.path.exists(local_point_data):
