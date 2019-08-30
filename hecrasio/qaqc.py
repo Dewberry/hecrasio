@@ -206,9 +206,12 @@ class DomainResults:
 
         def get_tseries_results(table):
             """Read in data from results tables as a Pandas DataFrame"""
-            data = '{}/{}/{}'.format(TSERIES_RESULTS_2DFLOW_AREA, self._domain, table)
-            d_array = np.array(self._plan_data[data]).T
-            return pd.DataFrame(d_array)
+            try:
+                data = '{}/{}/{}'.format(TSERIES_RESULTS_2DFLOW_AREA, self._domain, table)
+                d_array = np.array(self._plan_data[data]).T
+                return pd.DataFrame(d_array)
+            except:
+                print('{} is missing from the HDF!'.format(table))
 
         def get_tseries_forcing(table):
             """This table is not domain specific"""
@@ -620,11 +623,17 @@ def show_results(domains:list, model, rasPlan, plot_tseries:int=3) -> None:
     """
     if len(domains) > 1:
         results = {domain: DomainResults(model, rasPlan, domain) for domain in domains}
+        results_table = {}
         for domain, result in results.items():
             plot_descriptive_stats(result.Describe_Depths, result.Perimeter, domain)
             plot_extreme_edges(result.Extreme_Edges, result.Perimeter, mini_map=rasPlan.domain_polys)
             plotBCs(result, domain) 
-            return velCheckMain(result, domain, plot_tseries)
+            results_table[domain] = velCheckMain(result, domain, plot_tseries)
+        instability_count = sum([value.loc['Instability Count'] for value in list(results_table.values())])[0]
+        max_velocity = max([value.loc['Max Velocity'].values[0] for value in list(results_table.values())])
+        return pd.DataFrame(data=[instability_count, max_velocity],
+                            columns=['Results'],
+                            index=['Instability Count', 'Max Velocity'])
 
     else:
         domain = domains[0]
@@ -883,16 +892,30 @@ def make_qaqc_table(books:list) -> pd.core.frame.DataFrame:
     results_dict = {}
     for tup in books:
         nb, results = tup
-        result_dict = dict(ChainMap(*[list(json.loads(scrap).values())[0] for scrap in results.scraps]))
-        results_dict[nb] = result_dict
-    return pd.DataFrame.from_dict(results_dict).T
+        scrap_data = []
+        for scrap in results.scraps:
+            if scrap == 'Global Errors':
+                errors = results.scraps['Global Errors'].data
+                print("WARNING! {} had the following global errors: {}".format(nb, errors))
+            elif scrap != 'Global Errors':
+                logged_information = list(json.loads(scrap).values())[0]
+                scrap_data.append(logged_information)
+            else:
+                print('Unexpected scrap name identified, please troubleshoot!')
+        results_dict[nb] = dict(ChainMap(*scrap_data))
+    df = pd.DataFrame.from_dict(results_dict).T
+    drop_nbs = list(df[df['1D Cores'] != df['1D Cores'].isnull()].index)
+    print('WARNING! The following Notebooks had null 1D Cores values. '+
+          'These notebooks were dropped from the QA/QC table with the'+
+          ' assumption these notebooks are bad: {}'.format(drop_nbs))
+    return df[df['1D Cores'] == df['1D Cores'].isnull()]
 
 def fancy_report(nbs:list, values:list, units:str) -> None:
     print("The following notebooks have alarming values for this attribute\n")
-    print("{0: <20} {1} ({2})".format('Notebook', 'Value', units))
+    print("{0: <30} {1} ({2})".format('Notebook', 'Value', units))
     print("-"*79)
     for i in range(len(nbs)):
-        print("{0: <20} {1}".format(nbs[i], values[i]))
+        print("{0: <30} {1}".format(nbs[i], values[i]))
 
 def report_header(variable:str):
     print("\nNow evaluating: {}\n".format(variable))

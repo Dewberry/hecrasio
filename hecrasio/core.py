@@ -75,7 +75,7 @@ class ResultsZip:
         if hasattr(self, '_zipfile'):
             self._contents = [x.filename for x in self._zipfile.infolist()]
         else:
-            self._contents = self._hdf
+            self._contents = [self._hdf]
 
         # Check Nomenclature rules for STARR II PFRA products
         if self._pfra:
