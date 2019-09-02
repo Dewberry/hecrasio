@@ -17,6 +17,8 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 import scrapbook as sb
+from hecrasio.core import *
+from hecrasio.qaqc import *
 
 
 OUTPUT_EXTS = ['.html', '.ipynb', '.csv', '.tif', '.vrt']
@@ -32,7 +34,7 @@ def get_model_paths(model_id:str)-> tuple:
     
     # All Pluvial Models built from H00 input
     if sub_type in ['H06', 'H12', 'H24', 'H96']:
-        subtype = 'H00'
+        sub_type = 'H00'
         
     model_input = "s3://pfra/{0}/BaseModels/{0}_{1}_{2}.zip".format(study_area, model_type, sub_type)
     point_data =  "s3://pfra/RiskAssessment/{0}/Points/{0}_{1}.zip".format(study_area, model_type)
@@ -104,14 +106,33 @@ def get_terrain_data(terrainDir:str, s3_model_input:str, projection = 'Projectio
 def collect_output_data(jobID: str) -> str:
     """Move and rename output from RASMapper"""
     ras_grid_files = glob(os.path.join(os.getcwd(), '**', 'WSE*'), recursive=True)
-    rasGrid, rasVRT = ras_grid_files[0], ras_grid_files[1]
-    rasGridRename = 'WSE_{}.{}'.format(jobID, rasGrid.split('.')[-1])
-    rasVRTRename = 'WSE_{}.{}'.format(jobID, rasVRT.split('.')[-1])
+    if len(ras_grid_files) != 2:
+        return "TiffError: Expected 2 files found {}".format(str(ras_grid_files))
+    else:
+        rasGrid, rasVRT = ras_grid_files[0], ras_grid_files[1]
+        rasGridRename = 'WSE_{}.{}'.format(jobID, rasGrid.split('.')[-1])
+        rasVRTRename = 'WSE_{}.{}'.format(jobID, rasVRT.split('.')[-1])
 
-    for rawFilename in ras_grid_files:
-        updateFilename = 'WSE_{}.{}'.format(jobID, rawFilename.split('.')[-1])
-        os.rename(rawFilename, updateFilename)
-    return rasGridRename
+        for rawFilename in ras_grid_files:
+            updateFilename = 'WSE_{}.{}'.format(jobID, rawFilename.split('.')[-1])
+            os.rename(rawFilename, updateFilename)
+        return rasGridRename
+
+def testing_only_collect_output_data(jobID: str) -> str:
+    """Temporary Testing"""
+    updatedFiles = []
+    ras_grid_files = glob(os.path.join(os.getcwd(), '**', 'WSE*'), recursive=True)
+
+    for i, rawFilename in enumerate(ras_grid_files):
+        if len(ras_grid_files) > 2:
+            updateFilename = 'WSE_{}_{}.{}'.format(str(i), jobID, rawFilename.split('.')[-1])
+        else:
+            updateFilename = 'WSE_{}.{}'.format(jobID, rawFilename.split('.')[-1])
+        if not os.path.exists(updateFilename):
+            os.rename(rawFilename, updateFilename)
+
+        updatedFiles.append(updateFilename)
+    return updatedFiles
 
 def get_proj_str(raster_src:any):
     """Handler for ogr/osr projections"""
