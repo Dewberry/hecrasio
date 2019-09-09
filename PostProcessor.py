@@ -18,7 +18,6 @@ def main():
     procDirID = sys.argv[2] # Integer for naming processing folder if required
     projID = '_'.join([jobID.split('_')[0], jobID.split('_')[1]])
     projID.lower()
-
     
     # QAQC NB & RASMAPPER exe paths
     hecrasio_path = r'C:\Users\Administrator\Desktop\hecrasio'
