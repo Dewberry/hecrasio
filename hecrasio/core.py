@@ -70,8 +70,6 @@ class ResultsZip:
             pass
 
         else:
-            """Default to reading a local file"""
-            self._zipfile = zipfile.ZipFile(open(path,"rb"))
             self._cloud_platform = None
         
         if hasattr(self, '_zipfile'):
