@@ -104,7 +104,7 @@ def daskbag_bool_wse_hdf_local(wse_grid: str, num_chunks: int, bool_dir: str = "
             os.mkdir(bool_dir)
     except FileExistsError:
         pass
-    model_run_id = wse_grid.split("_")[-1].split(".")[0]
+    model_run_id = os.path.basename(wse_grid).split(".")[0]
     h5 = os.path.join(bool_dir, f"bool_{model_run_id}.hdf")
     bool_wse_to_hdf(wse_grid, model_run_id, h5, n_row_slices=num_chunks)
     return None
@@ -122,7 +122,7 @@ def write_weighted_chunks_local(c: int,
         pass
     filelist = glob(os.path.join(bool_dir, "*.hdf"))
     for i, f in enumerate(filelist):
-        run_id = f.split("_")[-1].split(".")[0]
+        run_id = f.split("_")[-2] + '_' + f.split("_")[-1].split(".")[0]
         weight = weights_dict[run_id]
         if i == 0:
             with h5py.File(f, "r") as hf:
