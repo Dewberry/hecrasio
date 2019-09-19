@@ -31,6 +31,7 @@ def get_model_paths(model_id:str)-> tuple:
     
     # Zipped model contents
     model_output = "s3://pfra/{0}/{1}/{2}/{3}/{0}_{1}_{2}_{3}_out.zip".format(study_area, model_type, sub_type, event_id)
+    output_dir ="s3://pfra/{0}/{1}/{2}/{3}".format(study_area, model_type, sub_type, event_id)
     
     # All Pluvial Models built from H00 input
     if sub_type in ['H06', 'H12', 'H24', 'H96']:
@@ -38,7 +39,7 @@ def get_model_paths(model_id:str)-> tuple:
         
     model_input = "s3://pfra/{0}/BaseModels/{0}_{1}_{2}.zip".format(study_area, model_type, sub_type)
     point_data =  "s3://pfra/RiskAssessment/{0}/Points/{0}_{1}.zip".format(study_area, model_type)
-    output_dir = model_output[:-25]
+
     return model_input, model_output, point_data, output_dir
 
 

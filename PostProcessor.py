@@ -16,7 +16,8 @@ from papermill.exceptions import PapermillExecutionError
 def main():
     jobID = sys.argv[1] # JobID to process
     procDirID = sys.argv[2] # Integer for naming processing folder if required
-    projID = jobID[0:6]
+    projID = '_'.join([jobID.split('_')[0], jobID.split('_')[1]])
+    projID.lower()
 
     
     # QAQC NB & RASMAPPER exe paths
