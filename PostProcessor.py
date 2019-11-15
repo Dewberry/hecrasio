@@ -4,6 +4,7 @@
 # ### Dev routine for PFRA Post-Processing
 import sys
 import os
+from time import sleep
 sys.path.append('../')
 from hecrasio.core import *
 from hecrasio.qaqc import *
@@ -85,6 +86,11 @@ def main():
         with open(os.path.join(errs, '{}.txt'.format(jobID)), 'a') as f:
             f.write("Notebook Error {}\n".format(e))
         raise
+    except RuntimeError:
+        sleep(60)
+        notebook = pm.execute_notebook(nb, qaqcNB, parameters={'hecrasio_path':hecrasio_path, 'model_s3path' : s3_model_output})
+        pipe = subprocess.Popen(['jupyter', 'nbconvert', qaqcNB], stdout=subprocess.PIPE)
+        
 
 
     # Get List of tif and associate files used in model 
